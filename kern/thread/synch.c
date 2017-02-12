@@ -154,6 +154,17 @@ lock_create(const char *name)
 		return NULL;
 	}
 
+        lock->lk_wchan = wchan_create(lock->lk_name);
+        if (lock->lk_wchan == NULL) {
+                kfree(lock->lk_name);
+                kfree(lock);
+                return NULL;
+        }
+
+        lock_init(&lock->lk_lock);
+        lock->lk_count = initial_count;
+
+
 	// add stuff here as needed
 
 	return lock;
