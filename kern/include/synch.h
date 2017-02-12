@@ -76,10 +76,11 @@ struct lock {
         char *lk_name;
         // add what you need here
         // (don't forget to mark things volatile as needed)
+        // add variables here as we need it. ( my comment ) 
 };
 
-struct lock *lock_create(const char *name);
-void lock_destroy(struct lock *);
+struct lock *lock_create(const char *name); // this is what we will use to creat locks
+void lock_destroy(struct lock *); // imp to dystroy locks as if not done will cause mempry leaks
 
 /*
  * Operations:
