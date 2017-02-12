@@ -154,6 +154,7 @@ lock_create(const char *name)
 		return NULL;
 	}
 
+<<<<<<< HEAD
         lock->lk_wchan = wchan_create(lock->lk_name);
         if (lock->lk_wchan == NULL) {
                 kfree(lock->lk_name);
@@ -164,6 +165,9 @@ lock_create(const char *name)
         lock_init(&lock->lk_lock);
         lock->lk_count = initial_count;
 
+=======
+	HANGMAN_LOCKABLEINIT(&lock->lk_hangman, lock->lk_name);
+>>>>>>> refs/remotes/staff/master
 
 	// add stuff here as needed
 
@@ -184,14 +188,23 @@ lock_destroy(struct lock *lock)
 void
 lock_acquire(struct lock *lock)
 {
+	/* Call this (atomically) before waiting for a lock */
+	//HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
+
 	// Write this
 
 	(void)lock;  // suppress warning until code gets written
+
+	/* Call this (atomically) once the lock is acquired */
+	//HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
 }
 
 void
 lock_release(struct lock *lock)
 {
+	/* Call this (atomically) when the lock is released */
+	//HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
+
 	// Write this
 
 	(void)lock;  // suppress warning until code gets written
