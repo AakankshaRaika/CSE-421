@@ -154,20 +154,7 @@ lock_create(const char *name)
 		return NULL;
 	}
 
-<<<<<<< HEAD
-        lock->lk_wchan = wchan_create(lock->lk_name);
-        if (lock->lk_wchan == NULL) {
-                kfree(lock->lk_name);
-                kfree(lock);
-                return NULL;
-        }
-
-        lock_init(&lock->lk_lock);
-        lock->lk_count = initial_count;
-
-=======
 	HANGMAN_LOCKABLEINIT(&lock->lk_hangman, lock->lk_name);
->>>>>>> refs/remotes/staff/master
 
 	// add stuff here as needed
 
