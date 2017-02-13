@@ -82,6 +82,11 @@ struct lock {
 
 struct lock *lock_create(const char *name); // this is what we will use to creat locks
 void lock_destroy(struct lock *); // imp to dystroy locks as if not done will cause mempry leaks
+	volatile struct thread *lk_hold;
+	struct spinlock lk_lock;
+	struct wchan *lk_wchan;
+};
+
 
 /*
  * Operations:
