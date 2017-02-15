@@ -194,12 +194,19 @@ lock_acquire(struct lock *lock)
 
 	KASSERT(lock->lk_holder == NULL);
 	KASSERT(lock != NULL);
+        KASSERT(curthread->t_in_interrupt == false);
 
-	spinlock_cleanup(&lock->lk_lock);
-	wchan_destroy(lock->lk_wchan);
+	spinlock_acquire(&lock->lk_lock);
+	while (lock->lk_holder != NULL) {
+		
+		spinlock_release(&lock->lk_lock);
+                wchan_sleep(lock->lk_wchan, &lock->lk_lock);
 
-	kfree(lock->lk_name);
-	kfree(lock);
+		spinlock_acquire(&lock->lk_lock);
+	}
+
+	lock->lk_holder = curthread;
+	spinlock_release(&lock->lk_lock);
 
 	/* Call this (atomically) once the lock is acquired */
 	HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
@@ -304,4 +311,48 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 	KASSERT(lock != NULL);
 	KASSERT(lock_do_i_hold(lock));
 	wchan_wakeall(cv->cv_wchan, &cv->cv_lock);
+}
+
+struct rwlock *
+rwlock_create(const char *name)
+{
+	struct lock *lock;
+	//to do
+	return lock;
+}
+
+void 
+rwlock_destroy(struct rwlock *rwlock)
+{
+	struct rwlock *rwlock;
+//insert here
+
+}
+
+void
+rwlock_acquire_read(struct rwlock *rwlock)
+{
+	struct rwlock *rwlock;
+
+//insert here
+}
+
+void
+rwlock_release_read(struct rwlock *rwlock)
+{
+	struct rwlock *rwlock;
+//insert her
+
+}
+
+void rwlock_acquire_write(struct rwlock *rwlock)
+{
+	struct rwlock *rwlock;
+//insert
+}
+
+void rwlock_release_write(struct rwlock *rwlock)
+{
+	struct rwlock *rwlock;
+//insert
 }
