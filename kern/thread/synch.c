@@ -67,7 +67,8 @@ sem_create(const char *name, unsigned initial_count)
     }
 
     spinlock_init(&sem->sem_lock);
-    sem->sem_count = initial_count;
+    sem->sem_count = initial_count; // AR : instead of the count
+                                    //  we will have held_thread 
 
     return sem;
 }
@@ -177,6 +178,7 @@ lock_destroy(struct lock *lock)
     // add stuff here as needed
     //AR : Something is wrong here. this is cleaning up spinlock
     //     double check this.
+    // not checking for null cases. 
     spinlock_cleanup(&lock->lk_lock);
     wchan_destroy(lock->lk_wchan);
 
