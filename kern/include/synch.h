@@ -77,15 +77,16 @@ struct lock {
         HANGMAN_LOCKABLE(lk_hangman);   /* Deadlock detector hook. */
         // add what you need here
         // (don't forget to mark things volatile as needed)
-
-	volatile struct thread *lk_hold;	//lock holder
-	struct spinlock lk_lock;	//lock
-	struct wchan *lk_wchan;		//wait channel
-
+        // add variables here as we need it. ( my comment ) 
 };
 
-struct lock *lock_create(const char *name);
-void lock_destroy(struct lock *);
+struct lock *lock_create(const char *name); // this is what we will use to creat locks
+void lock_destroy(struct lock *); // imp to dystroy locks as if not done will cause mempry leaks
+	volatile struct thread *lk_hold;
+	struct spinlock lk_lock;
+	struct wchan *lk_wchan;
+};
+
 
 /*
  * Operations:
@@ -121,8 +122,6 @@ struct cv {
         char *cv_name;
         // add what you need here
         // (don't forget to mark things volatile as needed)
-
-	struct wchan *cv_wchan;
 };
 
 struct cv *cv_create(const char *name);
