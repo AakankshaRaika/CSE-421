@@ -137,9 +137,10 @@ V(struct semaphore *sem)
 ////////////////////////////////////////////////////////////
 //
 // Lock.
+// implementing this similar to semaphore
 
 struct lock *
-lock_create(const char *name)
+lock_create(const char *name) //COMPLETED
 {
 	struct lock *lock;
 
@@ -158,8 +159,8 @@ lock_create(const char *name)
 
 	// add stuff here as needed
 
-	lock->lk_wchan = wchan_create(lock->lk_name);
-	if (lock->lk_wchan == NULL) 
+	lock->lk_wchan = wchan_create(lock->lk_name); //AR : creating a wchan for the lock
+	if (lock->lk_wchan == NULL) // this is null that means lock was not properly created
 	{
 		kfree(lock->lk_name);
 		kfree(lock);
@@ -172,43 +173,40 @@ lock_create(const char *name)
 	return lock;
 }
 
-void
-lock_destroy(struct lock *lock)
-{
+void lock_destroy(struct lock *lock) {
 	KASSERT(lock != NULL);
 
 	// add stuff here as needed
 
 	spinlock_cleanup(&lock->lk_lock);
+        if (lock -> lk_wchan != NULL) // checking if the lock even exists
+                                      // in the wait channel, if it does
+                                      // it is detroying it.
+        {
 	wchan_destroy(lock->lk_wchan);
+        }
 
-	kfree(lock->lk_name);
+	kfree(lock->lk_name); // after the lock is destroyed freeing
+                              // the name and memory
 	kfree(lock);
 }
 
 void
-lock_acquire(struct lock *lock)
+lock_acquire(struct lock *lock) //COMPLETED
 {
 	/* Call this (atomically) before waiting for a lock */
 	HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
 
-	KASSERT(lock->lk_holder == NULL);
-	KASSERT(lock != NULL);
-        KASSERT(curthread->t_in_interrupt == false);
-
-	spinlock_acquire(&lock->lk_lock);
-	while (lock->lk_holder != NULL) {
-
-		spinlock_release(&lock->lk_lock);
-                wchan_sleep(lock->lk_wchan, &lock->lk_lock);
-
-		spinlock_acquire(&lock->lk_lock);
+	spinlock_acquire(&lock->lk_lock);         //acquire a spin lock
+	while (lock->lk_holder != NULL) {         //if the holder is not empty keep sleeping
+		spinlock_release(&lock->lk_lock); //releasing the spin lock
+                wchan_sleep(lock->lk_wchan,&lock->lk_lock); //putting lk to sleep
+		spinlock_acquire(&lock->lk_lock); //acquire slk lock
 	}
 
-	lock->lk_holder = curthread;
-	spinlock_release(&lock->lk_lock);
-
-	/* Call this (atomically) once the lock is acquired */
+	lock->lk_holder = curthread; //ini. holder to the current thread this is imp for release function
+	spinlock_release(&lock->lk_lock); //release slk
+        /* Call this (atomically) once the lock is acquired */
 	HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
 }
 
@@ -220,23 +218,19 @@ lock_release(struct lock *lock)
 	lock->lk_holder = NULL;
 	wchan_wakeone(lock->lk_wchan, &lock->lk_lock);
 	spinlock_release(&lock->lk_lock);
+
 	/* Call this (atomically) when the lock is released */
 	HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
-
-	// Write this
-
 }
 
-bool
-lock_do_i_hold(struct lock *lock)
+bool lock_do_i_hold(struct lock *lock) //COMPLETED
 {
-	// Write this
-
-	KASSERT(lock != NULL);
-	spinlock_acquire(&lock->lk_lock);
-	bool check;
-	check = (lock->lk_holder == curthread);
-	spinlock_release(&lock->lk_lock);
+//all we need to do is check the curthread
+//its a bool value
+//curthread definded in current.h
+	KASSERT(lock != NULL); // making sure the lock exsits
+	bool check; // new var for check
+	check = (lock->lk_holder == curthread); //checking if the holder = current thread 
 
 	return check;
 }
