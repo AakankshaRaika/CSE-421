@@ -190,8 +190,6 @@ lock_acquire(struct lock *lock)
     kfree(lock->lk_name);
     kfree(lock);
 
-    /* Call this (atomically) once the lock is acquired */
-    HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
 }
 
 void
