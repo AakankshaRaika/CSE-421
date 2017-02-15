@@ -140,15 +140,24 @@ V(struct semaphore *sem)
 struct lock *
 lock_create(const char *name)
 {
+	//AR : creats a lock struct
 	struct lock *lock;
-
+	//AR : allocates the ini. memory to the lock acc the
+        //     defination of the kmalloc
 	lock = kmalloc(sizeof(*lock));
+        //AR : if the lock size NULL it returns null
 	if (lock == NULL) {
 		return NULL;
 	}
-
+	//AR : like strdup it allocates dynamic memory to the lock. 
+	//     it returns a pointed to the newly allocated memory . 
+	//     this will be usefull for lock aquire as we can
+        //     use the memory add to do activate it.
 	lock->lk_name = kstrdup(name);
+        //AR : If the lock does not have pointer to a
+	//     memory allocated to it return null
 	if (lock->lk_name == NULL) {
+	//AR : Free the memory and return null
 		kfree(lock);
 		return NULL;
 	}
@@ -166,18 +175,23 @@ lock_destroy(struct lock *lock)
     KASSERT(lock != NULL);
 
     // add stuff here as needed
-
+    //AR : Something is wrong here. this is cleaning up spinlock
+    //     double check this.
     spinlock_cleanup(&lock->lk_lock);
     wchan_destroy(lock->lk_wchan);
 
     kfree(lock->lk_name);
     kfree(lock);
-
 }
 
 void
 lock_acquire(struct lock *lock)
-{
+{   // AR : how can the destroy and acquire be the same?
+    //      I think we need a while look here to check for a
+    //      but network and put the lock to sleep as soon as
+    //      it comes out of the while lock it should be
+    //      unlocked.
+
     /* Call this (atomically) before waiting for a lock */
     HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
 
@@ -195,6 +209,8 @@ lock_acquire(struct lock *lock)
 void
 lock_release(struct lock *lock)
 {
+    // AR : we do need to acquire a lock to release is we need
+    //      to check if there is one acquired.
     KASSERT(lock_do_i_hold(lock));
     spinlock_acquire(&lock->lk_lock);
     lock->lk_hold = NULL;
