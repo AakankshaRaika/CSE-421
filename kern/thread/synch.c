@@ -198,7 +198,7 @@ lock_acquire(struct lock *lock)
 
 	spinlock_acquire(&lock->lk_lock);
 	while (lock->lk_holder != NULL) {
-		
+
 		spinlock_release(&lock->lk_lock);
                 wchan_sleep(lock->lk_wchan, &lock->lk_lock);
 
@@ -313,46 +313,53 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 	wchan_wakeall(cv->cv_wchan, &cv->cv_lock);
 }
 
-struct rwlock *
-rwlock_create(const char *name)
+struct rwlock * rwlock_create(const char *name)
 {
-	struct lock *lock;
-	//to do
-	return lock;
+        struct rwlock *rwlock;
+
+	rwlock = kmalloc(sizeof(*rwlock));
+	if (rwlock == NULL) {
+		return NULL;
+	}
+
+        rwlock->rwlock_name = kstrdup(name); //TODO : make sure you use rwlk here and not lk
+ 	if (rwlock->rwlock_name == NULL) {
+		kfree(rwlock);
+		return NULL;
+	}
+
+        return rwlock;
 }
 
 void 
 rwlock_destroy(struct rwlock *rwlock)
 {
-	struct rwlock *rwlock;
+KASSERT(rwlock != NULL);
 //insert here
-
 }
 
 void
 rwlock_acquire_read(struct rwlock *rwlock)
 {
-	struct rwlock *rwlock;
-
+KASSERT(rwlock != NULL);
 //insert here
 }
 
 void
 rwlock_release_read(struct rwlock *rwlock)
 {
-	struct rwlock *rwlock;
+KASSERT(rwlock != NULL);
 //insert her
-
 }
 
 void rwlock_acquire_write(struct rwlock *rwlock)
 {
-	struct rwlock *rwlock;
+KASSERT(rwlock != NULL);
 //insert
 }
 
 void rwlock_release_write(struct rwlock *rwlock)
 {
-	struct rwlock *rwlock;
+KASSERT(rwlock != NULL);
 //insert
 }
