@@ -69,12 +69,28 @@
 #include <test.h>
 #include <synch.h>
 
+struct lock *lk1;
+struct lock *lk2;
+struct lock *lk3;
+struct lock *lk4;
+struct semaphore *buf_sem;
+
 /*
  * Called by the driver during initialization.
  */
 
 void
 stoplight_init() {
+	lk1 = lock_create("lk1");				//create locks/sem
+	lk2 = lock_create("lk2");
+	lk3 = lock_create("lk3");
+	lk4 = lock_create("lk4");
+	buf_sem = sem_create("buf_sem", 3);
+	KASSERT(lk1 != NULL);					//assert not null
+	KASSERT(lk2 != NULL);
+	KASSERT(lk3 != NULL);
+	KASSERT(lk4 != NULL);
+	KASSERT(buf_sem != NULL);
 	return;
 }
 
@@ -83,36 +99,126 @@ stoplight_init() {
  */
 
 void stoplight_cleanup() {
+	lock_destroy(lk1);					//destroy locks/sem
+	lock_destroy(lk2);
+	lock_destroy(lk3);
+	lock_destroy(lk4);
+	sem_destroy(buf_sem);
 	return;
 }
+
+//Helper Functions
+
+void left_helper(struct lock *, uint32_t direction, uint32_t index);
+void left_helper(struct lock *lk_help1, struct lock *lk_help2, struct lock *lk_help3, uint32_t direction, uint32_t index)
+{
+	int help2_temp = ((direction + 3) % 4);	//left logic
+	int help3_temp = ((direction + 2) % 4);
+	P(buf_sem);
+	lock_acquire(lk_help1);
+	inQuadrant(direction, index);
+	lock_acquire(lk_help2);
+	inQuadrant(help2_temp, index);
+	lock_release(lk_help1);
+	lock_acquire(lk_help3);
+	inQuadrant(help3_temp, index);
+	lock_release(lk_help2);
+	leaveIntersection(index);
+	lock_release(lk_help3)
+	V(buf_sem);
+	return;
+}
+
+void right_helper(struct lock *, uint32_t direction, uint32_t index);
+void right_helper(struct lock * lk_help1, uint32_t direction, uint32_t index)
+{
+	P(buf_sem);						//right logic
+	lock_acquire(lk_help1);
+	inQuadrant(direction, index);
+	leaveIntersection(index);
+	lock_release(lk_help1);
+	V(buf_sem);
+	return;
+}
+
+void straight_helper(stuct lock *, uint32_t direction, uint32_t index);
+void straight_helper(stuct lock *lk_help1, struct lock *lk_help2, uint32_t direction, uint32_t index)
+{
+	int help2_temp = ((direction + 3) % 4);	//straight logic
+	P(buf_sem);
+	lock_acquire(lk_help1);
+	inQuadrant(direction, index);
+	lock_acquire(lk_help2);
+	inQuadrant(help2_temp, index);
+	lock_release(lk_help1);
+	leaveIntersection(index);
+	lock_release(lk_help2);
+	V(buf_sem);
+	return;
+}
+
+//Default functions
 
 void
 turnright(uint32_t direction, uint32_t index)
 {
-	(void)direction;
-	(void)index;
-	/*
-	 * Implement this function.
-	 */
+	if (direction == 0)					//implement right help
+	{
+		right_helper(lk1, direction, index);
+	}
+	else if (direction == 1)
+	{
+		right_helper(lk2, direction, index);
+	}
+	else if (direction == 2)
+	{
+		right_helper(lk3, direction, index);
+	}
+	else if (direction == 3)
+	{
+		right_helper(lk4, direction, index);
+	}
 	return;
 }
 void
 gostraight(uint32_t direction, uint32_t index)
 {
-	(void)direction;
-	(void)index;
-	/*
-	 * Implement this function.
-	 */
+	if (direction == 0)					//implement straight help
+	{
+		straight_helper(lk1, lk4, direction, index);
+	}
+	else if (direction == 1)
+	{
+		straight_helper(lk2, lk1, direction, index);
+	}
+	else if (direction == 2)
+	{
+		straight_helper(lk3, lk2, direction, index);
+	}
+	else if (direction == 3)
+	{
+		straight_helper(lk4, lk3, direction, index);
+	}
 	return;
 }
 void
 turnleft(uint32_t direction, uint32_t index)
 {
-	(void)direction;
-	(void)index;
-	/*
-	 * Implement this function.
-	 */
+	if (direction == 0)					//implement left help
+	{
+		left_helper(lk1, lk4, lk3, direction, index);
+	}
+	else if (direction == 1)
+	{
+		left_helper(lk2, lk1, lk4, direction, index);
+	}
+	else if (direction == 2)
+	{
+		left_helper(lk3, lk2, lk1, direction, index);
+	}
+	else if (direction == 3)
+	{
+		left_helper(lk4, lk3, lk2, direction, index);
+	}
 	return;
 }
