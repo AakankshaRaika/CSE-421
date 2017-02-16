@@ -40,11 +40,30 @@
 #include <test.h>
 #include <synch.h>
 
+struct lock *w_lk;
+int m_cnt;
+int f_cnt;
+int mm_cnt;
+struct cv *m_cv;
+struct cv *f_cv;
+struct cv *mm_cv;
+
 /*
  * Called by the driver during initialization.
  */
 
 void whalemating_init() {
+	m_cnt = 0;					//init counts
+	f_cnt = 0;
+	mm_cnt = 0;
+	m_cv = cv_create("m");				//create cv's
+	f_cv = cv_create("f");
+	mm_cv = cv_create("mm");
+	w_lk = lock_create("lk");
+	KASSERT(m_cv != NULL);				//assert not null
+	KASSERT(f_cv != NULL);
+	KASSERT(mm_cv != NULL);
+	KASSERT(w_lk != NULL);
 	return;
 }
 
@@ -54,38 +73,78 @@ void whalemating_init() {
 
 void
 whalemating_cleanup() {
+	lock_destroy(w_lk);				//destroy lock/cv's
+	cv_destroy(mm_cv);
+	cv_destroy(f_cv);
+	cv_destroy(m_cv);
 	return;
 }
 
 void
 male(uint32_t index)
 {
-	(void)index;
-	/*
-	 * Implement this function by calling male_start and male_end when
-	 * appropriate.
-	 */
+	male_start(index);				//start male thread
+	m_cnt = m_cnt + 1;
+	lock_acquire(w_lk);				//acquire lock
+	if(mm_cnt > 0 && f_cnt > 0)			//logic
+	{
+		f_cnt = f_cnt - 1;
+		cv_signal(f_cv, w_lk);
+		mm_cnt = mm_cnt - 1;
+		cv_signal(mm_cv, w_lk);
+		m_cnt = m_cnt - 1;
+	}
+	else if(mm_cnt <= 0 || f_cnt <= 0)
+	{
+		cv_wait(m_cv, w_lk);
+	}
+	male_end(index);				//end male thread
+	lock_release(w_lk);				//release lock
 	return;
 }
 
 void
 female(uint32_t index)
 {
-	(void)index;
-	/*
-	 * Implement this function by calling female_start and female_end when
-	 * appropriate.
-	 */
+	female_start(index);				//start female thread
+	f_cnt = f_cnt + 1;
+	lock_acquire(w_lk);				//acquire lock
+	if(mm_cnt > 0 && m_cnt > 0)			//logic
+	{
+		m_cnt = m_cnt - 1;
+		cv_signal(m_cv, w_lk);
+		mm_cnt = mm_cnt - 1;
+		cv_signal(mm_cv, w_lk);
+		f_cnt = f_cnt - 1;
+	}
+	else if(mm_cnt <= 0 || m_cnt <= 0)
+	{
+		cv_wait(f_cv, w_lk);
+	}
+	female_end(index);				//end female thread
+	lock_release(w_lk);				//release lock
 	return;
 }
 
 void
 matchmaker(uint32_t index)
 {
-	(void)index;
-	/*
-	 * Implement this function by calling matchmaker_start and matchmaker_end
-	 * when appropriate.
-	 */
+	matchmaker_start(index);			//start mm thread
+	mm_cnt = mm_cnt + 1;
+	lock_acquire(w_lk);				//acquire lock
+	if(m_cnt > 0 && f_cnt > 0)			//logic
+	{
+		m_cnt = m_cnt - 1;
+		cv_signal(m_cv, w_lk);
+		f_cnt = f_cnt - 1;
+		cv_signal(f_cv, w_lk);
+		mm_cnt = mm_cnt - 1;
+	}
+	else if(m_cnt <=0 || f_cnt <=0)
+	{
+		cv_wait(mm_cv, w_lk);
+	}
+	matchmaker_end(index);				//end mm thread
+	lock_release(w_lk);				//release lock
 	return;
 }
