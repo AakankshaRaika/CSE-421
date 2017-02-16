@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2000, 2001, 2002, 2003, 2004, 2005, 2008, 2009
  *	The President and Fellows of Harvard College.
@@ -134,14 +135,11 @@ V(struct semaphore *sem)
 	spinlock_release(&sem->sem_lock);
 }
 
-////////////////////////////////////////////////////////////
-//
+//////////////////////////////////////////////////////////////
 // Lock.
 // implementing this similar to semaphore
 
-struct lock *
-lock_create(const char *name) //COMPLETED
-{
+struct lock * lock_create(const char *name) {
 	struct lock *lock;
 
 	lock = kmalloc(sizeof(*lock));
@@ -156,9 +154,6 @@ lock_create(const char *name) //COMPLETED
 	}
 
 	HANGMAN_LOCKABLEINIT(&lock->lk_hangman, lock->lk_name);
-
-	// add stuff here as needed
-
 	lock->lk_wchan = wchan_create(lock->lk_name); //AR : creating a wchan for the lock
 	if (lock->lk_wchan == NULL) // this is null that means lock was not properly created
 	{
@@ -168,81 +163,81 @@ lock_create(const char *name) //COMPLETED
 	}
 
 	spinlock_init(&lock->lk_lock);
-	lock->lk_holder = NULL;
+	lock->lk_holder = NULL;//also no threads should be holding it when it is created
+        // unlike the semaphore we will not have count but instead we will nullify holds.
 
-	return lock;
+	return lock; // return the lock that was created
 }
 
 void lock_destroy(struct lock *lock) {
-	KASSERT(lock != NULL);
+       /*implementing this similar to the semaphore*/
 
-	// add stuff here as needed
-
-	spinlock_cleanup(&lock->lk_lock);
-        if (lock -> lk_wchan != NULL) // checking if the lock even exists
-                                      // in the wait channel, if it does
-                                      // it is detroying it.
-        {
+	KASSERT(lock != NULL); // making sure lock exists
+        KASSERT(lock_do_i_hold(lock) == false);
+        spinlock_cleanup(&lock->lk_lock);
+        if (lock -> lk_wchan != NULL && lock->lk_holder == curthread ){ // checking if the lock even exists
+                                       // in the wait channel, if it does
+                                       // it is detroying it.
 	wchan_destroy(lock->lk_wchan);
         }
-
-	kfree(lock->lk_name); // after the lock is destroyed freeing
-                              // the name and memory
-	kfree(lock);
+        lock->lk_holder = NULL; // no thread should be holding it when it is destroyed
+        kfree(lock->lk_name); // after the lock is destroyed freeing the name and memory
+        kfree(lock);
 }
 
-void
-lock_acquire(struct lock *lock) //COMPLETED
-{
+void lock_acquire(struct lock *lock) {       /* implementing this similar to semaphore*/
 	/* Call this (atomically) before waiting for a lock */
+
 	HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
+        KASSERT(lock != NULL);
+	KASSERT(curthread->t_in_interrupt == false);
 
 	spinlock_acquire(&lock->lk_lock);         //acquire a spin lock
 	while (lock->lk_holder != NULL) {         //if the holder is not empty keep sleeping
-		spinlock_release(&lock->lk_lock); //releasing the spin lock
                 wchan_sleep(lock->lk_wchan,&lock->lk_lock); //putting lk to sleep
-		spinlock_acquire(&lock->lk_lock); //acquire slk lock
 	}
+        //only one (curthread) can hold the lock at the same time
 
-	lock->lk_holder = curthread; //ini. holder to the current thread this is imp for release function
-	spinlock_release(&lock->lk_lock); //release slk
+        lock->lk_holder = curthread;//ini. holder to the current thread this is imp for release function
+
+        spinlock_release(&lock->lk_lock); //release slk
+
         /* Call this (atomically) once the lock is acquired */
 	HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
 }
 
-void
-lock_release(struct lock *lock)
-{
+void lock_release(struct lock *lock) {
+        /*implementing this similar to the V function for the semaphore*/
 	KASSERT(lock_do_i_hold(lock));
-	spinlock_acquire(&lock->lk_lock);
-	lock->lk_holder = NULL;
-	wchan_wakeone(lock->lk_wchan, &lock->lk_lock);
-	spinlock_release(&lock->lk_lock);
+        KASSERT(lock != NULL);
 
+	spinlock_acquire(&lock->lk_lock);
+        //releasing only if it is the current thread
+        if (lock->lk_holder == curthread){
+                lock->lk_holder = NULL; //putting the holder to null as will release this
+         	wchan_wakeone(lock->lk_wchan, &lock->lk_lock); //wake one of the locks
+        }
+
+	spinlock_release(&lock->lk_lock);
 	/* Call this (atomically) when the lock is released */
 	HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
 }
 
-bool lock_do_i_hold(struct lock *lock) //COMPLETED
-{
+bool lock_do_i_hold(struct lock *lock) {
 //all we need to do is check the curthread
 //its a bool value
 //curthread definded in current.h
-	KASSERT(lock != NULL); // making sure the lock exsits
+//	KASSERT(lock != NULL); // making sure the lock exsits
 	bool check; // new var for check
+//        spinlock_acquire(&lock ->lk_lock);
 	check = (lock->lk_holder == curthread); //checking if the holder = current thread 
-
-	return check;
+//	spinlock_release(&lock->lk_lock);
+        return check;
 }
 
 ////////////////////////////////////////////////////////////
-//
 // CV
-
-
-struct cv *
-cv_create(const char *name)
-{
+struct cv * cv_create(const char *name) {
 	struct cv *cv;
 
 	cv = kmalloc(sizeof(*cv));
@@ -255,7 +250,7 @@ cv_create(const char *name)
 		kfree(cv);
 		return NULL;
 	}
-
+        /*similar implemention to the semaphone and lock for create*/
 	cv->cv_wchan = wchan_create(cv->cv_name);
 	if(cv->cv_wchan == NULL)
 	{
@@ -263,52 +258,41 @@ cv_create(const char *name)
 		kfree(cv);
 		return NULL;
 	}
-
+        cv->cv_holder = NULL;
 	return cv;
 }
 
-void
-cv_destroy(struct cv *cv)
-{
+void cv_destroy(struct cv *cv) {
 	KASSERT(cv != NULL);
-
-	// add stuff here as needed
 	wchan_destroy(cv->cv_wchan);
 	kfree(cv->cv_name);
 	kfree(cv);
 }
 
-void
-cv_wait(struct cv *cv, struct lock *lock)
-{
-	//Write this
+void cv_wait(struct cv *cv, struct lock *lock) {
 	KASSERT(lock != NULL);
 	KASSERT(lock_do_i_hold(lock));
 	lock_release(lock);
+        while (cv->cv_holder != NULL){
 	wchan_sleep(cv->cv_wchan, &cv->cv_lock);
+        }
+        
 	lock_acquire(lock);
 }
 
-void
-cv_signal(struct cv *cv, struct lock *lock)
-{
-	// Write this
+void cv_signal(struct cv *cv, struct lock *lock) {
 	KASSERT(lock != NULL);
 	KASSERT(lock_do_i_hold(lock));
-	wchan_wakeone(cv->cv_wchan, &cv->cv_lock);
+	wchan_wakeone(cv->cv_wchan, &cv->cv_lock);//wake one thing
 }
 
-void
-cv_broadcast(struct cv *cv, struct lock *lock)
-{
-	// Write this
-	KASSERT(lock != NULL);
-	KASSERT(lock_do_i_hold(lock));
-	wchan_wakeall(cv->cv_wchan, &cv->cv_lock);
+void cv_broadcast(struct cv *cv, struct lock *lock) {
+        KASSERT(lock != NULL);
+        KASSERT(lock_do_i_hold(lock));
+	wchan_wakeall(cv->cv_wchan, &cv->cv_lock);//wake everything
 }
 
-struct rwlock * rwlock_create(const char *name)
-{
+struct rwlock * rwlock_create(const char *name) {
         struct rwlock *rwlock;
 
 	rwlock = kmalloc(sizeof(*rwlock));
