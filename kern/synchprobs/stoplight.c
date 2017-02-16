@@ -124,7 +124,7 @@ void left_helper(struct lock *lk_help1, struct lock *lk_help2, struct lock *lk_h
 	inQuadrant(help3_temp, index);
 	lock_release(lk_help2);
 	leaveIntersection(index);
-	lock_release(lk_help3)
+	lock_release(lk_help3);
 	V(buf_sem);
 	return;
 }
@@ -141,8 +141,8 @@ void right_helper(struct lock * lk_help1, uint32_t direction, uint32_t index)
 	return;
 }
 
-void straight_helper(stuct lock *, uint32_t direction, uint32_t index);
-void straight_helper(stuct lock *lk_help1, struct lock *lk_help2, uint32_t direction, uint32_t index)
+void straight_helper(struct lock *, uint32_t direction, uint32_t index);
+void straight_helper(struct lock *lk_help1, struct lock *lk_help2, uint32_t direction, uint32_t index)
 {
 	int help2_temp = ((direction + 3) % 4);	//straight logic
 	P(buf_sem);
