@@ -210,9 +210,12 @@ void lock_release(struct lock *lock) {
 	KASSERT(lock_do_i_hold(lock));
         KASSERT(lock != NULL);
 
-	spinlock_acquire(&lock->lk_lock); //GDB TODO deadlock error points here for cv_wait
+	spinlock_acquire(&lock->lk_lock); //TODO AR : gdb result there is a deadspin lock here when it runs in cv_wait
+
        	wchan_wakeone(lock->lk_wchan, &lock->lk_lock); //wake one of the locks
+
 	spinlock_release(&lock->lk_lock);
+
         lock->lk_holder = NULL; //putting the holder to null as will release this
 
 	/* Call this (atomically) when the lock is released */
@@ -262,7 +265,6 @@ struct cv * cv_create(const char *name) {
 
 void cv_destroy(struct cv *cv) {
 	KASSERT(cv != NULL);
-        spinlock_cleanup(&cv->cv_lock);
 	wchan_destroy(cv->cv_wchan);
 	kfree(cv->cv_name);
 	kfree(cv);
@@ -271,31 +273,31 @@ void cv_destroy(struct cv *cv) {
 void cv_wait(struct cv *cv, struct lock *lock) {
 	KASSERT(lock != NULL);
 	KASSERT(lock_do_i_hold(lock));
-	spinlock_acquire(&cv->cv_lock);
+	spinlock_acquire(&lock->lk_lock);
         lock_release(lock);
         while (lock->lk_holder != NULL){ //is holder is not null put the lock to sleep
 	wchan_sleep(cv->cv_wchan, &cv->cv_lock);
         }
         lock_acquire(lock);
-	spinlock_release(&cv->cv_lock); //releasing the supplied lock
+	spinlock_release(&lock->lk_lock); //releasing the supplied lock
 
 }
 
 void cv_signal(struct cv *cv, struct lock *lock) {
 	KASSERT(lock != NULL);
 	KASSERT(lock_do_i_hold(lock));
-        spinlock_acquire(&cv->cv_lock);
+        spinlock_acquire(&lock->lk_lock);
 	wchan_wakeone(cv->cv_wchan, &cv->cv_lock);//wake one thing
-        spinlock_release(&cv->cv_lock);
+        spinlock_release(&lock->lk_lock);
 
 }
 
 void cv_broadcast(struct cv *cv, struct lock *lock) {
         KASSERT(lock != NULL);
         KASSERT(lock_do_i_hold(lock));
-        spinlock_acquire(&cv->cv_lock);
+        spinlock_acquire(&lock->lk_lock);
 	wchan_wakeall(cv->cv_wchan, &cv->cv_lock);//wake everything
-        spinlock_release(&cv->cv_lock);
+        spinlock_release(&lock->lk_lock);
 
 }
 
