@@ -304,7 +304,7 @@ void cv_broadcast(struct cv *cv, struct lock *lock) {
 
 struct rwlock *rwlock_create(const char *name)
 {
-	struct rwlock *rwlock;
+	struct rwlock *rwlock;				//same as sem lock structure
 	rwlock = kmalloc(sizeof(*rwlock));
 	if(rwlock == NULL)
 	{
@@ -323,7 +323,7 @@ struct rwlock *rwlock_create(const char *name)
 		kfree(rwlock);
 		return NULL;
 	}
-	spinlock_init(&rwlock->rwlock_lock);
+	spinlock_init(&rwlock->rwlock_lock);		//init booleans and counts
 	rwlock->rwlock_wc = rwlock->rwlock_rc = 0;
 	rwlock->rwlock_wr = rwlock->rwlock_wa = false;
 	return rwlock;
@@ -331,66 +331,68 @@ struct rwlock *rwlock_create(const char *name)
 
 void rwlock_destroy(struct rwlock *rwlock)
 {
-KASSERT(rwlock != NULL);
-KASSERT(rwlock->rwlock_rc == 0);
-KASSERT(rwlock->rwlock_wr == false);
-wchan_destroy(rwlock->rwlock_wchan);
-spinlock_cleanup(&rwlock->rwlock_lock);
-kfree(rwlock->rwlock_name);
-kfree(rwlock);
+	KASSERT(rwlock != NULL);			//assert count is 0, writing is false
+	KASSERT(rwlock->rwlock_rc == 0);
+	KASSERT(rwlock->rwlock_wr == false);
+
+	wchan_destroy(rwlock->rwlock_wchan);
+	spinlock_cleanup(&rwlock->rwlock_lock);		//cleanup spinlock
+	kfree(rwlock->rwlock_name);
+	kfree(rwlock);
+
 }
 
 void rwlock_acquire_read(struct rwlock *rwlock)
 {
-KASSERT(rwlock != NULL);
-spinlock_acquire(&rwlock->rwlock_lock);
-while(rwlock->rwlock_wr || rwlock->rwlock_wa)
-{
-	wchan_sleep(rwlock->rwlock_wchan, &rwlock->rwlock_lock);
-}
-rwlock->rwlock_rc = rwlock->rwlock_rc + 1;
-KASSERT(rwlock->rwlock_wr == false);
-spinlock_release(&rwlock->rwlock_lock);
-return;
+	KASSERT(rwlock != NULL);
+	spinlock_acquire(&rwlock->rwlock_lock);
+	while(rwlock->rwlock_wr || rwlock->rwlock_wa)
+	{
+		wchan_sleep(rwlock->rwlock_wchan, &rwlock->rwlock_lock);		//sleep wait channel while writing or waiting
+	}
+	rwlock->rwlock_rc = rwlock->rwlock_rc + 1;					//increment reader count
+	KASSERT(rwlock->rwlock_wr == false);
+	spinlock_release(&rwlock->rwlock_lock);
+	return;
 }
 
 void rwlock_release_read(struct rwlock *rwlock)
 {
-int temp = random() % 2;
-KASSERT(rwlock != NULL);
-KASSERT(rwlock->rwlock_rc > 0);
-spinlock_acquire(&rwlock->rwlock_lock);
-rwlock->rwlock_rc = rwlock->rwlock_rc - 1;
-if(temp == 0 && rwlock->rwlock_rc > 0)
-{
-	rwlock->rwlock_wa = true;
-}
-wchan_wakeall(rwlock->rwlock_wchan, &rwlock->rwlock_lock);
-spinlock_release(&rwlock->rwlock_lock);
-return;
+	int temp = random() % 2;						//random int for reader count logic
+	KASSERT(rwlock != NULL);
+	KASSERT(rwlock->rwlock_rc > 0);
+	spinlock_acquire(&rwlock->rwlock_lock);
+	rwlock->rwlock_rc = rwlock->rwlock_rc - 1;
+	if(temp == 0 && rwlock->rwlock_rc > 0)
+	{
+		rwlock->rwlock_wa = true;
+	}
+	wchan_wakeall(rwlock->rwlock_wchan, &rwlock->rwlock_lock);		//wake all
+	spinlock_release(&rwlock->rwlock_lock);
+	return;
 }
 
 void rwlock_acquire_write(struct rwlock *rwlock)
 {
-KASSERT(rwlock != NULL);
-spinlock_acquire(&rwlock->rwlock_lock);
-rwlock->rwlock_wc = rwlock->rwlock_wc + 1;
-while(rwlock->rwlock_wr || rwlock->rwlock_rc > 0)
-{
-	wchan_sleep(rwlock->rwlock_wchan, &rwlock->rwlock_lock);
-}
-spinlock_release(&rwlock->rwlock_lock);
-rwlock->rwlock_wr = true;
-return;
+	KASSERT(rwlock != NULL);
+	spinlock_acquire(&rwlock->rwlock_lock);
+	rwlock->rwlock_wc = rwlock->rwlock_wc + 1;			//increment writer count
+	while(rwlock->rwlock_wr || rwlock->rwlock_rc > 0)
+	{
+		wchan_sleep(rwlock->rwlock_wchan, &rwlock->rwlock_lock);	//sleep wait channel while writing or reader count > 0
+	}
+	spinlock_release(&rwlock->rwlock_lock);				//release spinlock, set writing to true
+	rwlock->rwlock_wr = true;
+	return;
 }
 
 void rwlock_release_write(struct rwlock *rwlock)
 {
-KASSERT(rwlock != NULL);
-spinlock_acquire(&rwlock->rwlock_lock);
-rwlock->rwlock_wc = rwlock->rwlock_wc - 1;
-rwlock->rwlock_wa = rwlock->rwlock_wr = false;
-wchan_wakeall(rwlock->rwlock_wchan, &rwlock->rwlock_lock);
-spinlock_release(&rwlock->rwlock_lock);
-return;
+	KASSERT(rwlock != NULL);
+	spinlock_acquire(&rwlock->rwlock_lock);
+	rwlock->rwlock_wc = rwlock->rwlock_wc - 1;		//decrement writer count
+	rwlock->rwlock_wa = rwlock->rwlock_wr = false;		//set waiting boolean to false
+	wchan_wakeall(rwlock->rwlock_wchan, &rwlock->rwlock_lock);	//wake all
+	spinlock_release(&rwlock->rwlock_lock);			//release spinlock
+	return;
 }
