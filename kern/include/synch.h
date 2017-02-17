@@ -78,7 +78,7 @@ struct lock {
         // add what you need here
         // (don't forget to mark things volatile as needed)
 
-	volatile struct thread *lk_holder;	//lock holder
+        struct thread *lk_holder;	//lock holder
 	struct spinlock lk_lock;	//lock
 	struct wchan *lk_wchan;		//wait channel
 
@@ -122,6 +122,7 @@ struct cv {
         // add what you need here
         // (don't forget to mark things volatile as needed)
 
+        struct thread *cv_holder; //cv holder similar to lock holder. 
 	struct wchan *cv_wchan;
 	struct spinlock cv_lock;
 };

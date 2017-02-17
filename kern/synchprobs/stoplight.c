@@ -136,7 +136,7 @@ void right_helper(struct lock * lk_help1, uint32_t direction, uint32_t index)
 	lock_acquire(lk_help1);
 	inQuadrant(direction, index);
 	leaveIntersection(index);
-	lock_release(lk_help1);
+lock_release(lk_help1);
 	V(buf_sem);
 	return;
 }
@@ -152,7 +152,7 @@ void straight_helper(struct lock *lk_help1, struct lock *lk_help2, uint32_t dire
 	inQuadrant(help2_temp, index);
 	lock_release(lk_help1);
 	leaveIntersection(index);
-	lock_release(lk_help2);
+lock_release(lk_help2);
 	V(buf_sem);
 	return;
 }
