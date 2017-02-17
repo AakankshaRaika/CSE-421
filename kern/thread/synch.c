@@ -264,7 +264,7 @@ struct cv * cv_create(const char *name) {
 
 void cv_destroy(struct cv *cv) {
 	//destroy wait channel, cleanup spinlock, free cv
-	wchan_destroy(cv->cv_wchan);		
+	wchan_destroy(cv->cv_wchan);
 	spinlock_cleanup(&cv->cv_lock);
 	kfree(cv->cv_name);
 	kfree(cv);
@@ -389,6 +389,7 @@ void rwlock_acquire_write(struct rwlock *rwlock)
 void rwlock_release_write(struct rwlock *rwlock)
 {
 	KASSERT(rwlock != NULL);
+        KASSERT(rwlock->rwlock_wr == true);
 	spinlock_acquire(&rwlock->rwlock_lock);
 	rwlock->rwlock_wc = rwlock->rwlock_wc - 1;		//decrement writer count
 	rwlock->rwlock_wa = rwlock->rwlock_wr = false;		//set waiting boolean to false
