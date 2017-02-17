@@ -109,7 +109,7 @@ void stoplight_cleanup() {
 
 //Helper Functions
 
-void left_helper(struct lock *, uint32_t direction, uint32_t index);
+void left_helper(struct lock *, struct lock *, struct lock *, uint32_t direction, uint32_t index);
 void left_helper(struct lock *lk_help1, struct lock *lk_help2, struct lock *lk_help3, uint32_t direction, uint32_t index)
 {
 	int help2_temp = ((direction + 3) % 4);	//left logic
@@ -141,7 +141,7 @@ void right_helper(struct lock * lk_help1, uint32_t direction, uint32_t index)
 	return;
 }
 
-void straight_helper(struct lock *, uint32_t direction, uint32_t index);
+void straight_helper(struct lock *, struct lock *, uint32_t direction, uint32_t index);
 void straight_helper(struct lock *lk_help1, struct lock *lk_help2, uint32_t direction, uint32_t index)
 {
 	int help2_temp = ((direction + 3) % 4);	//straight logic
