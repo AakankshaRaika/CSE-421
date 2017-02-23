@@ -35,6 +35,7 @@
 #include <thread.h>
 #include <current.h>
 #include <syscall.h>
+#include <kern/include/kern/unistd.h>
 
 
 /*
@@ -111,6 +112,16 @@ syscall(struct trapframe *tf)
 
 	    /* Add stuff here */
 
+            case SYS_open:
+		err = sys_open((const char *)tf->tf_a0,tf->tf_a1);
+		break;
+
+            case SYS_write:
+		err = sys_write(tf->tf_a0,
+			        (const void *)tf->tf_a1,
+				(size_t)tf->tf_a2);
+		break;
+
 	    default:
 		kprintf("Unknown syscall %d\n", callno);
 		err = ENOSYS;
@@ -158,4 +169,29 @@ void
 enter_forked_process(struct trapframe *tf)
 {
 	(void)tf;
+}
+
+
+ssize_t sys_write(int fd, const void *buf, size_t buflen) {
+
+KASSERT(fd != 0);
+KASSERT(buflen > 0);	//should probably get rid of this
+KASSERT(buf != NULL);
+
+// need KASSERT to make sure file is writeable (do not need to worry about this for asst2.1 - carl)
+//the fd is file handle it is coming from the open.
+//to implement write read the runprogram.c
+//we do not need to dereference the pointer buf
+//refer the runprogram as a tamplete for the write.
+//you atleast need open stubbed out for write to be functional properly.
+
+return 0; // reutrn 0 means nothing could be written
+}
+
+int sys_open(const char *filename, int flags){
+KASSERT(filename != NULL);
+KASSERT(flags >= 0);
+
+
+return 0;
 }
