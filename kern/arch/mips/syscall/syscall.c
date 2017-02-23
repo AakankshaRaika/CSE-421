@@ -110,10 +110,11 @@ syscall(struct trapframe *tf)
 		break;
 
 	    /* Add stuff here */
+/*
             case SYS_open:
 		err = sys_open((const char *)tf->tf_a0,tf->tf_a1);
 		break;
-
+*/
             case SYS_write:
 		err = sys_write(tf->tf_a0,
 			        (const void *)tf->tf_a1,
@@ -167,4 +168,16 @@ void
 enter_forked_process(struct trapframe *tf)
 {
 	(void)tf;
+}
+
+
+ssize_t
+sys_write(int fd, const void *buf, size_t buflen) {
+
+KASSERT(fd != 0);
+KASSERT(buflen > 0);	//should probably get rid of this
+KASSERT(buf != NULL);
+// need KASSERT to make sure file is writeable
+
+return 0;
 }
