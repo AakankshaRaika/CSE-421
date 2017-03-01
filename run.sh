@@ -26,6 +26,6 @@ else
 		exit
 fi
 
-cd ~/CSE-421/root
+cd $HOME/CSE-421/root
 sys161 kernel
 

@@ -199,30 +199,35 @@ int sys_open(const char *filename, int flags){
 KASSERT(filename != NULL);
 KASSERT(flags >= 0);
 
+//KASSERT(file handle >= 0);
 
-return 0;
+return 0; // returns file handle 
 }
 
 /*
 // rest of file system calls
 ssize_t sys_read(int fd, void *buf, size_t buflen) {
 
-return 0;
+KASSERT(file is open);
+
+return 0;		// return byte count
 }
 
-int sys_open(const char *filename, int flags) {
-
-return 0;
-}
 
 int sys_close(int fd) {
 
-return 0;
+
+				// return -1 on error
+return 0;		// return 0 on success
 }
 
 off_t sys_lseek(int fd, off_t pos, int whence) {
 
-return NULL;
+KASSERT(seek position > 0);
+
+
+				// returns -1 on error
+return NULL;	// returns new position on success
 }
 
 int sys_dup(int oldfd, int newfd) {
