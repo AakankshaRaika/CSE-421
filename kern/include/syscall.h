@@ -58,6 +58,27 @@ __DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
 
 int sys_reboot(int code);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
+
+// file system calls
+
 ssize_t sys_write(int fd, const void *buf, size_t buflen);
+ssize_t sys_read(int fd, void *buf, size_t buflen);
 int sys_open(const char *filename, int flags);
+int sys_close(int fd);
+off_t sys_lseek(int fd, off_t pos, int whence);
+int sys_dup(int oldfd, int newfd);
+
+
+// process system calls
+pid_t sys_fork(void);
+int sys_exec(const char *program, char **args);
+pid_t sys_wait(pid_t pid, int *status, int options);
+void sys_exit(int exitcode);
+
+
+// "easy" system calls
+int sys_chdir(const char *pathname);i
+pid_t sys_getpid(void);
+
+
 #endif /* _SYSCALL_H_ */

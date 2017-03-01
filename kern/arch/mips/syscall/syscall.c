@@ -202,3 +202,67 @@ KASSERT(flags >= 0);
 
 return 0;
 }
+
+/*
+// rest of file system calls
+ssize_t sys_read(int fd, void *buf, size_t buflen) {
+
+return 0;
+}
+
+int sys_open(const char *filename, int flags) {
+
+return 0;
+}
+
+int sys_close(int fd) {
+
+return 0;
+}
+
+off_t sys_lseek(int fd, off_t pos, int whence) {
+
+return NULL;
+}
+
+int sys_dup(int oldfd, int newfd) {
+
+return 0;
+}
+
+
+
+// process system calls
+
+pid_t sys_fork(void) {
+
+return 0;
+}
+
+int sys_exec(const char *program, char **args) {
+
+return 0;
+}
+
+pid_t sys_wait(pid_t pid, int *status, int options) {
+
+return 0;
+}
+
+void sys_exit(int exitcode) {
+
+}
+
+
+// "easy" system calls
+
+int sys_chdir(const char *pathname) {
+
+return 0;
+}
+
+pid_t sys_getpid(void) {
+
+return 0;
+}
+*/
