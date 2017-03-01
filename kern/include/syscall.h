@@ -77,7 +77,7 @@ void sys_exit(int exitcode);
 
 
 // "easy" system calls
-int sys_chdir(const char *pathname);i
+int sys_chdir(const char *pathname);
 pid_t sys_getpid(void);
 
 
