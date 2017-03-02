@@ -1,4 +1,4 @@
-cd $HOME/CSE-421/kern/compile/ASST2
+cd $HOME/os161/kern/compile/ASST2
 bmake depend
 
 if [ $? -eq 0 ] ; then
@@ -26,6 +26,6 @@ else
 		exit
 fi
 
-cd $HOME/CSE-421/root
+cd $HOME/os161/root
 sys161 kernel
 
