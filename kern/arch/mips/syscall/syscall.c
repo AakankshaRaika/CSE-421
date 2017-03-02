@@ -216,7 +216,7 @@ return 0;		// return byte count
 
 int sys_close(int fd) {
 
-
+KASSERT(fd is closed);
 				// return -1 on error
 return 0;		// return 0 on success
 }
@@ -232,7 +232,12 @@ return NULL;	// returns new position on success
 
 int sys_dup(int oldfd, int newfd) {
 
-return 0;
+KASSERT(oldfd > 0);
+KASSERT(newfd > 0);
+
+// on error return -1;
+
+return newfd;
 }
 
 
@@ -262,6 +267,8 @@ void sys_exit(int exitcode) {
 // "easy" system calls
 
 int sys_chdir(const char *pathname) {
+
+
 
 return 0;
 }
