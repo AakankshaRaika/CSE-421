@@ -162,3 +162,22 @@ uio_kinit(struct iovec *iov, struct uio *u,
 	u->uio_rw = rw;
 	u->uio_space = NULL;
 }
+
+void
+uio_Userinit(struct iovec *iov, struct uio *u,
+          void *kbuf, size_t len, off_t pos, enum uio_rw rw, struct addrspace *as)
+{
+        iov->iov_kbase = kbuf;
+        iov->iov_len = len;
+        u->uio_iov = iov;
+        u->uio_iovcnt = 1;
+        u->uio_offset = pos;
+        u->uio_resid = len;
+        u->uio_segflg = UIO_USERSPACE;
+        u->uio_rw = rw;
+        u->uio_space = as; // this should point to the file/space the user intends to edit/access
+        //what I want is the current process address space.
+
+	// use procgetas to get the address space of the current process (as). 
+}
+

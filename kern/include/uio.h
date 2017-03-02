@@ -138,5 +138,7 @@ int uiomovezeros(size_t len, struct uio *uio);
 void uio_kinit(struct iovec *, struct uio *,
 	       void *kbuf, size_t len, off_t pos, enum uio_rw rw);
 
+void uio_Userinit(struct iovec *, struct uio *,
+               void *kbuf, size_t len, off_t pos, enum uio_rw rw, struct addrspace *as);
 
 #endif /* _UIO_H_ */
