@@ -41,6 +41,20 @@
 struct addrspace;
 struct thread;
 struct vnode;
+struct _file{ //fd is just an index of the vnode in the table.
+         //also keep an track of the position in the file you will not wanna start from the start every singal time
+         //sync the above
+         /* every process has a diff file table */
+         /* a process can open multi files */
+         /* we need file table for every process not every file which is why it is the "current process" */
+	 /* seek is actually already implemented in seek.h but we need to use this in the iseek and get vallues that way. we need to make sure we sycn it properly*/
+         struct vnode *vn;     /* abstract representation of that file */
+                               // I basically need the seek position, sync the seek and vnode. 3 things in total.
+};                             //struct for the the file table work.
+
+void set_vnode(struct vnode *vnode);
+
+struct vnode get_vnode();
 
 /*
  * Process structure.
@@ -59,6 +73,7 @@ struct vnode;
  * thread_switch needs to be able to fetch the current address space
  * without sleeping.
  */
+
 struct proc {
 	char *p_name;			/* Name of this process */
 	struct spinlock p_lock;		/* Lock for this structure */
