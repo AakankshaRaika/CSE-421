@@ -198,7 +198,7 @@ return 0; // reutrn 0 means nothing could be written
 int sys_open(const char *filename, int flags){
 KASSERT(filename != NULL);
 KASSERT(flags >= 0);
-
+//KASSERT(flags == O_RDONLY || flags == O_WRONLY)
 //KASSERT(file handle >= 0);
 
 return 0; // returns file handle 
@@ -209,6 +209,8 @@ return 0; // returns file handle
 ssize_t sys_read(int fd, void *buf, size_t buflen) {
 
 KASSERT(file is open);
+KASSERT(fd > 0);
+KASSERT(buf is valid); // what makes buf valid?
 
 return 0;		// return byte count
 }
@@ -216,7 +218,7 @@ return 0;		// return byte count
 
 int sys_close(int fd) {
 
-KASSERT(fd is closed);
+KASSERT(fd > 0);
 				// return -1 on error
 return 0;		// return 0 on success
 }
@@ -224,6 +226,7 @@ return 0;		// return 0 on success
 off_t sys_lseek(int fd, off_t pos, int whence) {
 
 KASSERT(seek position > 0);
+KASSERT(fd > 0);
 
 
 				// returns -1 on error
