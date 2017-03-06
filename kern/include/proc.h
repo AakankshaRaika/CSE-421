@@ -41,16 +41,19 @@
 struct addrspace;
 struct thread;
 struct vnode;
-struct _file{ //fd is just an index of the vnode in the table.
-         //also keep an track of the position in the file you will not wanna start from the start every singal time
-         //sync the above
+struct _file{
+   struct vnode *vn;  /*this is the vnode pointing to that perticular file*/
+   int fd;            /*this is the index of that vnode within the file t able*/
+   int seek;          /*this is keeping track of the "last modified" point in the file*/
+};
+
          /* every process has a diff file table */
          /* a process can open multi files */
          /* we need file table for every process not every file which is why it is the "current process" */
 	 /* seek is actually already implemented in seek.h but we need to use this in the iseek and get vallues that way. we need to make sure we sycn it properly*/
-         struct vnode *vn;     /* abstract representation of that file */
-                               // I basically need the seek position, sync the seek and vnode. 3 things in total.
-};                             //struct for the the file table work.
+         // I basically need the seek position, sync the seek and vnode. 3 things in total.
+         //struct for the the file table work.
+
 
 void set_vnode(struct vnode *vnode);
 
@@ -79,6 +82,8 @@ struct proc {
 	struct spinlock p_lock;		/* Lock for this structure */
 	unsigned p_numthreads;		/* Number of threads in this process */
 
+        struct _file *f_t[64];          /* file table */
+
 	/* VM */
 	struct addrspace *p_addrspace;	/* virtual address space */
 
@@ -90,6 +95,11 @@ struct proc {
 
 /* This is the process structure for the kernel and for kernel-only threads. */
 extern struct proc *kproc;
+
+/*setting the file vnode with open*/
+void set_file_vnode (const char file_name);
+
+struct vnode *get_file_vnode (struct _file *ft , int fd ); //this will return the vnode to the file at the fd
 
 /* Call once during system startup to allocate data structures. */
 void proc_bootstrap(void);

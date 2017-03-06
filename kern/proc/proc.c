@@ -85,6 +85,13 @@ proc_create(const char *name)
 	return proc;
 }
 
+
+/*this is returning the vnode to the file at the fd given, vnode is just pointing to that file*/
+struct vnode *get_file_vnode (struct _file *file_table , int file_discriptor ){
+  return file_table[file_discriptor].vn;
+}
+
+
 /*
  * Destroy a proc structure.
  *

@@ -181,10 +181,8 @@ KASSERT(buf != NULL);
 if ( fd == 0 ) return -1;         // if the fd is null return fd is not valid
 if ( buflen == 0 ) return -1;     // if buflen is not >0 return -1
 if ( buf == NULL ) return -1;     //if buf is pointing to null return invalid address space
-//get the char value for fd instead of the int 
+//get the char value for fd instead of the int
 //int result = vfs_open(fd,O_WRONLY,0,&buf);
-
-
 // need KASSERT to make sure file is writeable (do not need to worry about this for asst2.1 - carl)
 //the fd is file handle it is coming from the open.
 //to implement write read the runprogram.c
