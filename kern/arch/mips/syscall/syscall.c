@@ -36,6 +36,7 @@
 #include <current.h>
 #include <syscall.h>
 #include <kern/unistd.h>
+#include <uio.h>
 
 
 /*
@@ -190,6 +191,16 @@ if ( buf == NULL ) return -1;     //if buf is pointing to null return invalid ad
 //refer the runprogram as a tamplete for the write.
 //you atleast need open stubbed out for write to be functional properly.
 
+/* for uio
+need iovec *
+need ui *
+kbuf = buf
+len = buflen
+need off_t pos
+need enum uio 
+as = proc_getas
+
+*/
 return 0; // reutrn 0 means nothing could be written
 }
 
