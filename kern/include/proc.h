@@ -82,7 +82,7 @@ struct proc {
 	struct spinlock p_lock;		/* Lock for this structure */
 	unsigned p_numthreads;		/* Number of threads in this process */
 
-        struct _file *f_t[64];          /* file table */
+        struct _file *f_table[64];          /* file table */
 
 	/* VM */
 	struct addrspace *p_addrspace;	/* virtual address space */
@@ -96,10 +96,16 @@ struct proc {
 /* This is the process structure for the kernel and for kernel-only threads. */
 extern struct proc *kproc;
 
-/*setting the file vnode with open*/
-void set_file_vnode (const char file_name);
+struct vnode *get_file_vnode (int fd ); //this will return the vnode to the file at the fd
 
-struct vnode *get_file_vnode (struct _file *ft , int fd ); //this will return the vnode to the file at the fd
+/**/
+void set_file_vnode(int fd , struct vnode *vn);
+
+/**/
+void set_seek (int fd , int seek);
+
+/**/
+void get_seek (int fd);
 
 /* Call once during system startup to allocate data structures. */
 void proc_bootstrap(void);
