@@ -62,6 +62,7 @@ struct proc *
 proc_create(const char *name)
 {
 	struct proc *proc;
+        //struct _file *f_t;
 
 	proc = kmalloc(sizeof(*proc));
 	if (proc == NULL) {
@@ -73,11 +74,20 @@ proc_create(const char *name)
 		return NULL;
 	}
 
+        //f_t = kmalloc(sizeof(*f_t));
+        //if ( f_t == NULL){
+        //         return NULL:
+        //   }
+
 	proc->p_numthreads = 0;
 	spinlock_init(&proc->p_lock);
 
 	/* VM fields */
 	proc->p_addrspace = NULL;
+
+        /*file table*/
+        //proc->f_table = f_t;
+
 
 	/* VFS fields */
 	proc->p_cwd = NULL;
@@ -87,10 +97,21 @@ proc_create(const char *name)
 
 
 /*this is returning the vnode to the file at the fd given, vnode is just pointing to that file*/
-struct vnode *get_file_vnode (struct _file *file_table , int file_discriptor ){
-  return file_table[file_discriptor].vn;
-}
-
+//struct vnode *get_file_vnode (int file_discriptor){
+//  return curproc->f_table[file_discriptor].vn;
+//}
+//
+//void set_file_vnode (int file_discriptor, struct vnode *vn){
+//  curproc->f_table[file_discriptor].vn = vn;
+//}
+//
+//int get_seek (int file_discriptor){
+//  return curproc->f_table[file_-discriptor].seek;
+//}
+//
+//void set_seek (int file_discriptor , int seek){
+//   curproc->f_t[file_discriptor].seek = seek;
+//}
 
 /*
  * Destroy a proc structure.
