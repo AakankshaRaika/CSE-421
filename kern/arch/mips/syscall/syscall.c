@@ -174,35 +174,23 @@ enter_forked_process(struct trapframe *tf)
 
 
 ssize_t sys_write(int fd, const void *buf, size_t buflen) {
-
 KASSERT(fd != 0);
 KASSERT(buflen > 0);	//should probably get rid of this
 KASSERT(buf != NULL);
-
 if ( fd == 0 ) return -1;         // if the fd is null return fd is not valid
 if ( buflen == 0 ) return -1;     // if buflen is not >0 return -1
 if ( buf == NULL ) return -1;     //if buf is pointing to null return invalid address space
-//get the char value for fd instead of the int
-//int result = vfs_open(fd,O_WRONLY,0,&buf);
-// need KASSERT to make sure file is writeable (do not need to worry about this for asst2.1 - carl)
-//the fd is file handle it is coming from the open.
-//to implement write read the runprogram.c
-//we do not need to dereference the pointer buf
-//refer the runprogram as a tamplete for the write.
-//you atleast need open stubbed out for write to be functional properly.
-
-/* for uio
-need iovec *
-need ui *
-kbuf = buf
-len = buflen
-need off_t pos
-need enum uio 
-as = proc_getas
-
-*/
+/*
+struct  iovec iov;
+struct uio u;
+off_t pos;
+enum uio_rw rw;
+struct addrspace *as;
+as = proc_getas();*/
+//uio_Userinit(&iov ,&u , (void)buf, buflen, pos, rw, as);
 return 0; // reutrn 0 means nothing could be written
 }
+
 
 int sys_open(const char *filename, int flags){
 KASSERT(filename != NULL);
@@ -210,13 +198,18 @@ KASSERT(flags >= 0);
 //KASSERT(flags == O_RDONLY || flags == O_WRONLY)
 //KASSERT(file handle >= 0);
 
-return 0; // returns file handle 
+return 0; // returns file handle.
 }
 
 /*
 // rest of file system calls
 ssize_t sys_read(int fd, void *buf, size_t buflen) {
-
+struct  iovec iov;
+struct uio u;
+off_t pos;
+enum uio_rw rw;
+struct addrspace *as;
+as = proc_getas();
 KASSERT(file is open);
 KASSERT(fd > 0);
 KASSERT(buf is valid); // what makes buf valid?

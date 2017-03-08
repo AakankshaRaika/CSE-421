@@ -45,19 +45,8 @@ struct _file{
    struct vnode *vn;  /*this is the vnode pointing to that perticular file*/
    int fd;            /*this is the index of that vnode within the file t able*/
    int seek;          /*this is keeping track of the "last modified" point in the file*/
+   struct spinlock spin;
 };
-
-         /* every process has a diff file table */
-         /* a process can open multi files */
-         /* we need file table for every process not every file which is why it is the "current process" */
-	 /* seek is actually already implemented in seek.h but we need to use this in the iseek and get vallues that way. we need to make sure we sycn it properly*/
-         // I basically need the seek position, sync the seek and vnode. 3 things in total.
-         //struct for the the file table work.
-
-
-void set_vnode(struct vnode *vnode);
-
-struct vnode get_vnode();
 
 /*
  * Process structure.
@@ -96,7 +85,7 @@ struct proc {
 /* This is the process structure for the kernel and for kernel-only threads. */
 extern struct proc *kproc;
 
-struct vnode *get_file_vnode (int fd ); //this will return the vnode to the file at the fd
+struct vnode *get_file_vnode ( int fd ); //this will return the vnode to the file at the fd
 
 /**/
 void set_file_vnode(int fd , struct vnode *vn);
@@ -105,7 +94,7 @@ void set_file_vnode(int fd , struct vnode *vn);
 void set_seek (int fd , int seek);
 
 /**/
-void get_seek (int fd);
+int get_seek (int fd);
 
 /* Call once during system startup to allocate data structures. */
 void proc_bootstrap(void);
