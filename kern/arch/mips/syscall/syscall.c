@@ -39,6 +39,8 @@
 #include <uio.h>
 #include <vfs.h>
 #include <proc.h>
+#include <synch.h>
+#include <kern/seek.h>
 
 
 /*
@@ -102,6 +104,13 @@ syscall(struct trapframe *tf)
 	 */
 
 	retval = 0;
+	
+	struct lock *lock;
+
+
+	
+
+
 
 	switch (callno) {
 	    case SYS_reboot:
@@ -153,6 +162,7 @@ syscall(struct trapframe *tf)
 			break;
 	}
 
+	spinlock_init(&lock->lk_lock);
 
 	if (err) {
 		/*
@@ -205,7 +215,8 @@ if ( fd == 0 ) return -1;         // if the fd is null return fd is not valid
 if ( buflen == 0 ) return -1;     // if buflen is not >0 return -1
 if ( buf == NULL ) return -1;     //if buf is pointing to null return invalid address space
 
-
+// spinlock_init(lock from this file)
+// spinlock_aquire(lock from this file)
 
 
 // for office hours, need to figure out how to initialize these values/are correct values
@@ -216,6 +227,8 @@ enum uio_rw rw;
 struct addrspace *as;
 as = proc_getas();
 uio_Userinit(iov ,u , (void *)buf, buflen, pos, rw, as);
+
+// spinlock_release(lock from this file)
 /*
 struct vnode *vd;
 vd = get_file_vnode(fd);
@@ -279,18 +292,26 @@ return 0;		// return 0 on success
 }
 
 
-
+*/
 off_t sys_lseek(int fd, off_t pos, int whence) {
 
-KASSERT(seek position > 0);
+//KASSERT(seek position > 0);
 KASSERT(fd > 0);
 
+//spinlock_aquire();
 
-				// returns -1 on error
-return NULL;	// returns new position on success
+if (whence == SEEK_SET) set_seek(fd, pos);
+
+else if (whence == SEEK_CUR) set_seek(fd, get_seek(fd)+pos);
+
+//if (whence == SEEK_END) set_seek(fd,  // how to get end of file position
+
+else return -1;
+
+return get_seek(fd);	// returns new position on success
 }
 
-
+/*
 int sys_dup2(int oldfd, int newfd) {
 
 KASSERT(oldfd > 0);

@@ -103,7 +103,7 @@ void set_file_vnode (int file_discriptor, struct vnode *vn){
   curproc->f_table[file_discriptor]->vn = vn;
 }
 
-int get_seek (int file_discriptor){
+off_t get_seek (int file_discriptor){
   return curproc->f_table[file_discriptor]->seek;
 }
 
