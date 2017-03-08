@@ -37,6 +37,8 @@
 #include <syscall.h>
 #include <kern/unistd.h>
 #include <uio.h>
+#include <vfs.h>
+#include <proc.h>
 
 
 /*
@@ -103,13 +105,13 @@ syscall(struct trapframe *tf)
 
 	switch (callno) {
 	    case SYS_reboot:
-		err = sys_reboot(tf->tf_a0);
-		break;
+			err = sys_reboot(tf->tf_a0);
+			break;
 
 	    case SYS___time:
-		err = sys___time((userptr_t)tf->tf_a0,
-				 (userptr_t)tf->tf_a1);
-		break;
+			err = sys___time((userptr_t)tf->tf_a0,
+			(userptr_t)tf->tf_a1);
+			break;
 
 	    /* Add stuff here */
 
@@ -120,26 +122,32 @@ syscall(struct trapframe *tf)
         case SYS_write:
 			err = sys_write(tf->tf_a0,(const void *)tf->tf_a1,(size_t)tf->tf_a2);
 			break;
-
+/*
 		case SYS_read:
 			err=sys_read(tf->tf_a0,(void *)tf->tf_a1,(size_t)tf->tf_a2);
 			break;
+
 		case SYS_lseek:
 			err=sys_lseek(tf->tf_a0, (off_t)tf->tf_a1, tf->tf_a2);
 			break;
+		
 		case SYS_close:
 			err=sys_close(tf->tf_a0);
 			break;
+		
 		case SYS_dup2:
 			err=sys_dup2(tf->tf_a0, tf->tf_a1);
 			break;
+		
 		case SYS_chdir:
 			err=sys_chdir((const char *)tf->tf_a0);
 			break;
-		case SYS__getcwd:
+		
+		case SYS___getcwd:
 			err=sys__getcwd((char *)tf->tf_a0, (size_t)tf->tf_a1);
 			break;
-	    default:
+*/	    
+		default:
 			kprintf("Unknown syscall %d\n", callno);
 			err = ENOSYS;
 			break;
@@ -211,10 +219,20 @@ return 0; // reutrn 0 means nothing could be written
 int sys_open(const char *filename, int flags){
 KASSERT(filename != NULL);
 KASSERT(flags >= 0);
-//KASSERT(flags == O_RDONLY || flags == O_WRONLY)
+//KASSERT(flags == O_RDONLY || flags == O_WRONLY);
+//struct addrspace *as;
+struct vnode *v;
+int result;
+
+result =vfs_open((char *) filename, flags, 0, &v);
+
+set_file_vnode(result, v);
+
+if (result) return result;
+
 //KASSERT(file handle >= 0);
 
-return 0; // returns file handle.
+return result; // returns file handle.
 }
 
 /*
@@ -241,6 +259,8 @@ KASSERT(fd > 0);
 return 0;		// return 0 on success
 }
 
+
+
 off_t sys_lseek(int fd, off_t pos, int whence) {
 
 KASSERT(seek position > 0);
@@ -251,7 +271,8 @@ KASSERT(fd > 0);
 return NULL;	// returns new position on success
 }
 
-int sys_dup(int oldfd, int newfd) {
+
+int sys_dup2(int oldfd, int newfd) {
 
 KASSERT(oldfd > 0);
 KASSERT(newfd > 0);
@@ -260,7 +281,6 @@ KASSERT(newfd > 0);
 
 return newfd;
 }
-
 
 
 // process system calls
