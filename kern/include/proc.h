@@ -46,6 +46,7 @@ struct _file{
    int fd;            /*this is the index of that vnode within the file t able*/
    int seek;          /*this is keeping track of the "last modified" point in the file*/
    struct spinlock spin;
+   const char *file_name;
 };
 
 /*
@@ -95,6 +96,10 @@ void set_seek (int fd , int seek);
 
 /**/
 int get_seek (int fd);
+
+void set_file_name(int file_descriptor, const char *file_name);
+
+const char * get_file_name(int fd);
 
 /* Call once during system startup to allocate data structures. */
 void proc_bootstrap(void);

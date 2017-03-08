@@ -111,6 +111,15 @@ void set_seek (int file_discriptor , int seek){
    curproc->f_table[file_discriptor]->seek = seek;
 }
 
+
+const char * get_file_name (int file_discriptor){
+  return curproc->f_table[file_discriptor]->file_name;
+}
+
+void set_file_name (int file_discriptor, const char * file_name){
+   curproc->f_table[file_discriptor]->file_name = file_name;
+}
+
 /*
  * Destroy a proc structure.
  *

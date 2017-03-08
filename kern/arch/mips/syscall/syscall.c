@@ -204,14 +204,23 @@ KASSERT(buf != NULL);
 if ( fd == 0 ) return -1;         // if the fd is null return fd is not valid
 if ( buflen == 0 ) return -1;     // if buflen is not >0 return -1
 if ( buf == NULL ) return -1;     //if buf is pointing to null return invalid address space
-/*
-struct  iovec iov;
-struct uio u;
-off_t pos;
+
+
+
+
+// for office hours, need to figure out how to initialize these values/are correct values
+struct  iovec *iov;
+struct uio *u;
+off_t pos = 0;
 enum uio_rw rw;
 struct addrspace *as;
-as = proc_getas();*/
-//uio_Userinit(&iov ,&u , (void)buf, buflen, pos, rw, as);
+as = proc_getas();
+uio_Userinit(iov ,u , (void *)buf, buflen, pos, rw, as);
+/*
+struct vnode *vd;
+vd = get_file_vnode(fd);
+*/
+
 return 0; // reutrn 0 means nothing could be written
 }
 
@@ -222,7 +231,7 @@ KASSERT(flags >= 0);
 //KASSERT(flags == O_RDONLY || flags == O_WRONLY);
 //struct addrspace *as;
 struct vnode *v;
-int result;
+int result; // this is the file handle
 
 result =vfs_open((char *) filename, flags, 0, &v);
 
@@ -247,6 +256,16 @@ as = proc_getas();
 KASSERT(file is open);
 KASSERT(fd > 0);
 KASSERT(buf is valid); // what makes buf valid?
+
+
+struct  iovec *iov;
+struct uio *u;
+off_t pos = 0;
+enum uio_rw rw;
+struct addrspace *as;
+as = proc_getas();
+uio_Userinit(iov ,u , (void *)buf, buflen, pos, rw, as);
+
 
 return 0;		// return byte count
 }
