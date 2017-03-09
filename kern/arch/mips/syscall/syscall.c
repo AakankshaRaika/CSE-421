@@ -237,7 +237,7 @@ ssize_t sys_write(int fd, const void *buf, size_t buflen) {
  	if (file_open != -1 && sizeof(buf) < buflen){
                 VOP_WRITE(curproc->f_table[fd]->vn , &u);
                 set_seek (fd , sys_lseek(fd,sizeof(buf),SEEK_CUR));
-                return sizeof(buf);
+                return (size_t)sizeof(buf);
  	}
 /*
 if (part or all of addrspace is invalid)
@@ -249,8 +249,6 @@ return ENOSPC;
 if (hardware i/o error occurred)
 return EIO;
 */
-
-
 	return 0; // return 0 means nothing could be written
 }
 
@@ -335,20 +333,30 @@ return EFAULT;
 if (a hardware I/O error occurred reaeding the data)
 return EIO;
 */
-struct  iovec iov;
-struct uio u;     // what should we initilize it to?
-off_t pos = get_seek(fd);     //This will come from the lseek
-enum uio_rw rw;    //this will the UIO_VALUE
-rw = UIO_READ;
-struct addrspace *as;
-as = proc_getas();
-uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
 
-const char *filename = get_file_name(fd);
-int file_open = sys_open(filename , O_RDONLY);
- if (file_open != -1 && sizeof(buf) < buflen){
-       sys_lseek(fd,sizeof(buf),SEEK_CUR);
- }
+// spinlock_init(lock from this file)
+// spinlock_aquire(lock from this file)
+        struct  iovec iov;
+        struct uio u;                   /* what should we initilize it to?*/
+        off_t pos = get_seek(fd);       /* This will come from the lseek*/
+        enum uio_rw rw;                 /* this will the UIO_VALUE*/
+        rw = UIO_READ;
+        struct addrspace *as;
+        as = proc_getas();
+        uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
+
+        const char *filename = curproc->f_table[fd]->file_name; //look into this method
+        int file_open = sys_open(filename , O_RDONLY);
+        struct addrspace *as_buf;
+        as_buf = kmalloc(sizeof(buf));
+        copyinstr ((const_userptr_t) filename , (char * ) as_buf, buflen , (size_t *)sizeof(buf));
+
+
+        if (file_open != -1 && sizeof(buf) < buflen){
+                VOP_READ(curproc->f_table[fd]->vn , &u);
+                set_seek (fd , sys_lseek(fd,sizeof(buf),SEEK_CUR));
+                return (size_t)sizeof(buf);
+        }
 
 
 return 0;		// return byte count
