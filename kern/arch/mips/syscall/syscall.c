@@ -208,9 +208,28 @@ ssize_t sys_write(int fd, const void *buf, size_t buflen) {
 KASSERT(fd != 0);
 KASSERT(buflen > 0);	//should probably get rid of this
 KASSERT(buf != NULL);
-if ( fd == 0 ) return EBADF;         // if the fd is null return fd is not valid
+if ( fd == 0 ) return EBADF;      // if the fd is null return fd is not valid
 if ( buflen == 0 ) return -1;     // if buflen is not >0 return -1
 if ( buf == NULL ) return -1;     //if buf is pointing to null return invalid address space
+
+// spinlock_init(lock from this file)
+// spinlock_aquire(lock from this file)
+struct  iovec iov;
+struct uio u;      		/* what should we initilize it to?*/
+off_t pos = get_seek(fd);     	/* This will come from the lseek*/
+enum uio_rw rw;    		/* this will the UIO_VALUE*/
+rw = UIO_WRITE;
+struct addrspace *as;
+as = proc_getas();
+uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
+
+ const char *filename = get_file_name(fd);
+ int file_open = sys_open(filename , O_WRONLY);
+ if (file_open != -1 && sizeof(buf) < buflen){
+
+       
+       sys_lseek(fd,sizeof(buf),SEEK_CUR);
+ }
 
 /*
 if (part or all of addrspace is invalid)
@@ -223,22 +242,8 @@ if (hardware i/o error occurred)
 return EIO;
 */
 
-// spinlock_init(lock from this file)
-// spinlock_aquire(lock from this file)
 
-
-struct  iovec iov;
-struct uio u;     // what should we initilize it to? 
-off_t pos = 0;     //This will come from the lseek
-enum uio_rw rw;    //this will the UIO_VALUE
-rw = UIO_WRITE;
-struct addrspace *as;
-as = proc_getas();
-uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
-
-
-
-return 0; // reutrn 0 means nothing could be written
+return 0; // return 0 means nothing could be written
 }
 
 /*------------------------------------------------------*/
@@ -270,7 +275,6 @@ if (the named object is a directory and it was able to be opened for writing) re
 if ((the process's file table was full or a process specific limit on open files was reached) or the system file table is full, if such a thing exists or a system-wide limit on open files was reached)
 return EMFILE;
 
-
 if (the named object is a block device with no filesystem mounted to it)
 return ENXIO;
 
@@ -289,11 +293,11 @@ return EFAULT;
 result =vfs_open((char *) filename, flags, 0, &v);
 
 set_file_vnode(result, v);
-
+set_file_name (result , filename);
 if (result) return result;
 
 
-return result; // returns file handle.
+return -1; // returns -1 on an error
 }
 
 /*------------------------------------------------------*/
@@ -316,8 +320,8 @@ if (a hardware I/O error occurred reaeding the data)
 return EIO;
 */
 struct  iovec iov;
-struct uio u;     // what should we initilize it to? 
-off_t pos = 0;     //This will come from the lseek
+struct uio u;     // what should we initilize it to?
+off_t pos = get_seek(fd);     //This will come from the lseek
 enum uio_rw rw;    //this will the UIO_VALUE
 rw = UIO_READ;
 struct addrspace *as;
