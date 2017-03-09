@@ -104,13 +104,7 @@ syscall(struct trapframe *tf)
 	 */
 
 	retval = 0;
-	
-	struct lock *lock;
-
-
-	
-
-
+//	struct lock *lock;
 
 	switch (callno) {
 	    case SYS_reboot:
@@ -131,38 +125,38 @@ syscall(struct trapframe *tf)
         case SYS_write:
 			err = sys_write(tf->tf_a0,(const void *)tf->tf_a1,(size_t)tf->tf_a2);
 			break;
-/*
-		case SYS_read:
+
+	case SYS_read:
 			err=sys_read(tf->tf_a0,(void *)tf->tf_a1,(size_t)tf->tf_a2);
 			break;
-
+/*
 		case SYS_lseek:
 			err=sys_lseek(tf->tf_a0, (off_t)tf->tf_a1, tf->tf_a2);
 			break;
-		
+
 		case SYS_close:
 			err=sys_close(tf->tf_a0);
 			break;
-		
+
 		case SYS_dup2:
 			err=sys_dup2(tf->tf_a0, tf->tf_a1);
 			break;
-		
+
 		case SYS_chdir:
 			err=sys_chdir((const char *)tf->tf_a0);
 			break;
-		
+
 		case SYS___getcwd:
 			err=sys__getcwd((char *)tf->tf_a0, (size_t)tf->tf_a1);
 			break;
-*/	    
+*/
 		default:
 			kprintf("Unknown syscall %d\n", callno);
 			err = ENOSYS;
 			break;
 	}
 
-	spinlock_init(&lock->lk_lock);
+//	spinlock_init(&lock->lk_lock);
 
 	if (err) {
 		/*
@@ -207,6 +201,9 @@ enter_forked_process(struct trapframe *tf)
 }
 
 
+/*------------------------------------------------------*/
+/*-------------------SYS CALL WRITE----------------------*/
+/*------------------------------------------------------*/
 ssize_t sys_write(int fd, const void *buf, size_t buflen) {
 KASSERT(fd != 0);
 KASSERT(buflen > 0);	//should probably get rid of this
@@ -230,29 +227,27 @@ return EIO;
 // spinlock_aquire(lock from this file)
 
 
-// for office hours, need to figure out how to initialize these values/are correct values
-struct  iovec *iov;
-struct uio *u;
-off_t pos = 0;
-enum uio_rw rw;
+struct  iovec iov;
+struct uio u;     // what should we initilize it to? 
+off_t pos = 0;     //This will come from the lseek
+enum uio_rw rw;    //this will the UIO_VALUE
+rw = UIO_WRITE;
 struct addrspace *as;
 as = proc_getas();
-uio_Userinit(iov ,u , (void *)buf, buflen, pos, rw, as);
+uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
 
-// spinlock_release(lock from this file)
-/*
-struct vnode *vd;
-vd = get_file_vnode(fd);
-*/
+
 
 return 0; // reutrn 0 means nothing could be written
 }
 
-
+/*------------------------------------------------------*/
+/*-------------------SYS CALL OPEN----------------------*/
+/*------------------------------------------------------*/
 int sys_open(const char *filename, int flags){
-KASSERT(filename != NULL);
-KASSERT(flags >= 0);
-KASSERT(flags == O_RDONLY || flags == O_WRONLY);
+//KASSERT(filename != NULL);
+//KASSERT(flags >= 0);
+//KASSERT(flags == O_RDONLY || flags == O_WRONLY);
 //struct addrspace *as;
 struct vnode *v;
 int result; // this is the file handle
@@ -291,9 +286,6 @@ return EIO;
 if ( filename was an invalid pointer)
 return EFAULT;
 */
-
-
-
 result =vfs_open((char *) filename, flags, 0, &v);
 
 set_file_vnode(result, v);
@@ -304,19 +296,16 @@ if (result) return result;
 return result; // returns file handle.
 }
 
-/*
+/*------------------------------------------------------*/
+/*-------------------SYS CALL READ----------------------*/
+/*------------------------------------------------------*/
 // rest of file system calls
 ssize_t sys_read(int fd, void *buf, size_t buflen) {
-struct  iovec iov;
-struct uio u;
-off_t pos;
-enum uio_rw rw;
-struct addrspace *as;
-as = proc_getas();
-KASSERT(file is open);
-KASSERT(fd > 0);
-KASSERT(buf is valid); // what makes buf valid?
+//KASSERT(file is open);
+KASSERT(fd >= 0);
+//KASSERT(buf is valid); // what makes buf valid?
 
+/*
 if (fd is not a valid file descriptor or was not opened for reading)
 return EBADF;
 
@@ -325,22 +314,25 @@ return EFAULT;
 
 if (a hardware I/O error occurred reaeding the data)
 return EIO;
-
-
-
-struct  iovec *iov;
-struct uio *u;
-off_t pos = 0;
-enum uio_rw rw;
+*/
+struct  iovec iov;
+struct uio u;     // what should we initilize it to? 
+off_t pos = 0;     //This will come from the lseek
+enum uio_rw rw;    //this will the UIO_VALUE
+rw = UIO_READ;
 struct addrspace *as;
 as = proc_getas();
-uio_Userinit(iov ,u , (void *)buf, buflen, pos, rw, as);
+uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
 
 
 return 0;		// return byte count
 }
 
 
+/*------------------------------------------------------*/
+/*-------------------SYS CALL CLOSE---------------------*/
+/*------------------------------------------------------*/
+/*
 int sys_close(int fd) {
 
 KASSERT(fd > 0);
@@ -354,18 +346,17 @@ return EIO;
 				// return -1 on error
 return 0;		// return 0 on success
 }
-
-
 */
-off_t sys_lseek(int fd, off_t pos, int whence) {
 
+/*------------------------------------------------------*/
+/*-------------------SYS CALL LSEEK---------------------*/
+/*------------------------------------------------------*/
+off_t sys_lseek(int fd, off_t pos, int whence) {
 //KASSERT(seek position > 0);
 KASSERT(fd > 0);
-
 //spinlock_aquire();
 
 /*
-
 if (fd is not a valid file handle)
 return EBADF;
 
@@ -375,11 +366,7 @@ return ESPIPE;
 if (whence is invalid or the resulting seek position would be negative)
 return EINVAL;
 
-
-
 */
-
-
 if (whence == SEEK_SET) set_seek(fd, pos);
 
 else if (whence == SEEK_CUR) set_seek(fd, get_seek(fd)+pos);
@@ -391,6 +378,10 @@ else return -1;
 return get_seek(fd);	// returns new position on success
 }
 
+
+/*------------------------------------------------------*/
+/*-------------------SYS CALL DUP2----------------------*/
+/*------------------------------------------------------*/
 /*
 int sys_dup2(int oldfd, int newfd) {
 
@@ -405,14 +396,16 @@ return EBADF;
 if ((the process's file table was full or a process specific limit on open files was reached) or (the system's file table was full, if such a thing is possible, or a global limit on open files was reached))
 return EMFILE;
 
-
-
 return newfd;
 }
+*/
 
 
-// process system calls
+/*------------------------------------------------------*/
+/*-------------------PROCESS SYS CALL FORK--------------*/
+/*------------------------------------------------------*/
 
+/*
 pid_t sys_fork(void) {
 
 if (the current user already has too many processes or there are already too many processes on the system)
@@ -421,12 +414,15 @@ return EMPROC;
 if (sufficient virtual memory for the new process was not available)
 return ENOMEM;
 
-
 return 0;
 }
+*/
 
+/*------------------------------------------------------*/
+/*-------------------PROCESS SYS CALL EXECV-------------*/
+/*------------------------------------------------------*/
+/*
 int sys_execv(const char *program, char **args) {
-
 if (the device prefix of program did not exist)
 return ENODEV;
 
@@ -456,7 +452,13 @@ return EFAULT;
 
 return 0;
 }
+*/
 
+/*------------------------------------------------------*/
+/*-------------------PROCESS SYS CALL WAITPID-----------*/
+/*------------------------------------------------------*/
+
+/*
 pid_t sys_waitpid(pid_t pid, int *status, int options) {
 
 if (the options argument requested invalid or unsupported options)
@@ -474,12 +476,18 @@ return EFAULT;
 
 return 0;
 }
+*/
 
+/*------------------------------------------------------*/
+/*-------------------PROCESS SYS CALL EXIT--------------*/
+/*------------------------------------------------------*/
+/*
 void sys_exit(int exitcode) {
 
 }
+*/
 
-
+/*
 // "easy" system calls
 
 int sys_chdir(const char *pathname) {
