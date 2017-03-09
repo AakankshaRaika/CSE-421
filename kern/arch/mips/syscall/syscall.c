@@ -41,7 +41,7 @@
 #include <proc.h>
 #include <synch.h>
 #include <kern/seek.h>
-
+#include <kern/fcntl.h>
 
 /*
  * System call dispatcher.
@@ -252,7 +252,7 @@ return 0; // reutrn 0 means nothing could be written
 int sys_open(const char *filename, int flags){
 KASSERT(filename != NULL);
 KASSERT(flags >= 0);
-//KASSERT(flags == O_RDONLY || flags == O_WRONLY);
+KASSERT(flags == O_RDONLY || flags == O_WRONLY);
 //struct addrspace *as;
 struct vnode *v;
 int result; // this is the file handle
