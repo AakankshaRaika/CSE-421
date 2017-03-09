@@ -44,6 +44,8 @@
 #include <kern/seek.h>
 #include <kern/fcntl.h>
 #include <vnode.h>
+#include <copyinout.h>
+#define MAX_PATH 512
 
 /*
  * System call dispatcher.
@@ -225,13 +227,18 @@ ssize_t sys_write(int fd, const void *buf, size_t buflen) {
 	as = proc_getas();
 	uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
 
- 	//const char *filename = copyinstr(); //look into this method
- 	//int file_open = sys_open(filename , O_WRONLY);
- 	//if (file_open != -1 && sizeof(buf) < buflen){
+ 	const char *filename = curproc->f_table[fd]->file_name; //look into this method
+ 	int file_open = sys_open(filename , O_WRONLY);
+        struct addrspace *as_buf;
+        as_buf = kmalloc(sizeof(buf));
+        copyinstr ((const_userptr_t) filename , (char * ) as_buf, buflen , (size_t *)sizeof(buf));
+
+
+ 	if (file_open != -1 && sizeof(buf) < buflen){
                 VOP_WRITE(curproc->f_table[fd]->vn , &u);
                 set_seek (fd , sys_lseek(fd,sizeof(buf),SEEK_CUR));
                 return sizeof(buf);
- 	//}
+ 	}
 /*
 if (part or all of addrspace is invalid)
 return EFAULT;
@@ -257,10 +264,6 @@ int sys_open(const char *filename, int flags){
 //struct addrspace *as;
 struct vnode *v;
 int result; // this is the file handle
-
-struct addrspace *as;
-
-//as = kmalloc(curproc->f_table[]);
 
 /*
 if (device prefix of filename does not exist)
@@ -299,12 +302,12 @@ return EFAULT;
 //do kmalloc to allocate memory on the heap for the file
 
 struct addrspace *as;
+as = kmalloc(sizeof(filename));
 
-as = kmalloc(filename);
+size_t actual;
+copyinstr((const_userptr_t) filename, (char *)as, (size_t )MAX_PATH, &actual);
 
-//use copyinstr before we can actually open the file
 result =vfs_open((char *) filename, flags, 0, &v);
-copyinstr(
 set_file_vnode(result, v);
 set_file_name (result , filename);
 if (result) return result;
