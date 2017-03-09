@@ -71,8 +71,8 @@ int sys_dup(int oldfd, int newfd);
 
 // process system calls
 pid_t sys_fork(void);
-int sys_exec(const char *program, char **args);
-pid_t sys_wait(pid_t pid, int *status, int options);
+int sys_execv(const char *program, char **args);
+pid_t sys_waitpid(pid_t pid, int *status, int options);
 void sys_exit(int exitcode);
 
 

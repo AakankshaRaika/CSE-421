@@ -211,9 +211,20 @@ ssize_t sys_write(int fd, const void *buf, size_t buflen) {
 KASSERT(fd != 0);
 KASSERT(buflen > 0);	//should probably get rid of this
 KASSERT(buf != NULL);
-if ( fd == 0 ) return -1;         // if the fd is null return fd is not valid
+if ( fd == 0 ) return EBADF;         // if the fd is null return fd is not valid
 if ( buflen == 0 ) return -1;     // if buflen is not >0 return -1
 if ( buf == NULL ) return -1;     //if buf is pointing to null return invalid address space
+
+/*
+if (part or all of addrspace is invalid)
+return EFAULT;
+
+if (no more free space in filesystem)
+return ENOSPC;
+
+if (hardware i/o error occurred)
+return EIO;
+*/
 
 // spinlock_init(lock from this file)
 // spinlock_aquire(lock from this file)
@@ -246,13 +257,49 @@ KASSERT(flags >= 0);
 struct vnode *v;
 int result; // this is the file handle
 
+/*
+if (device prefix of filename does not exist)
+return ENODEV;
+
+if (a non-final component of filename was not a directory)
+return ENOTDIR;
+
+if (a non-final component of filename does not exist or (the named file does not exist and O_CREAT was not specified))
+return ENOENT;
+
+if (the file exists and O_EXCL was specified)
+return EEXIST;
+
+if (the named object is a directory and it was able to be opened for writing) return EISDIR;
+
+if ((the process's file table was full or a process specific limit on open files was reached) or the system file table is full, if such a thing exists or a system-wide limit on open files was reached)
+return EMFILE;
+
+
+if (the named object is a block device with no filesystem mounted to it)
+return ENXIO;
+
+if (the file was to be created and the filesystem involved was full)
+return ENOSPC;
+
+if (flags contained invalid values)
+return EINVAL;
+
+if ( a hardware I/O error occurred)
+return EIO;
+
+if ( filename was an invalid pointer)
+return EFAULT;
+*/
+
+
+
 result =vfs_open((char *) filename, flags, 0, &v);
 
 set_file_vnode(result, v);
 
 if (result) return result;
 
-//KASSERT(file handle >= 0);
 
 return result; // returns file handle.
 }
@@ -269,6 +316,16 @@ as = proc_getas();
 KASSERT(file is open);
 KASSERT(fd > 0);
 KASSERT(buf is valid); // what makes buf valid?
+
+if (fd is not a valid file descriptor or was not opened for reading)
+return EBADF;
+
+if (part or all of the address space pointed to by buf is invalid)
+return EFAULT;
+
+if (a hardware I/O error occurred reaeding the data)
+return EIO;
+
 
 
 struct  iovec *iov;
@@ -287,6 +344,13 @@ return 0;		// return byte count
 int sys_close(int fd) {
 
 KASSERT(fd > 0);
+
+if (fd is not a valid file handle)
+return EBADF;
+
+if (a hardware I/O error occurred)
+return EIO;
+
 				// return -1 on error
 return 0;		// return 0 on success
 }
@@ -299,6 +363,22 @@ off_t sys_lseek(int fd, off_t pos, int whence) {
 KASSERT(fd > 0);
 
 //spinlock_aquire();
+
+/*
+
+if (fd is not a valid file handle)
+return EBADF;
+
+if (fd refers to an object which does not support seeking)
+return ESPIPE;
+
+if (whence is invalid or the resulting seek position would be negative)
+return EINVAL;
+
+
+
+*/
+
 
 if (whence == SEEK_SET) set_seek(fd, pos);
 
@@ -319,6 +399,14 @@ KASSERT(newfd > 0);
 
 // on error return -1;
 
+if (oldfd is not a valid file handle, or newfd is a value that cannot be a valid file handle)
+return EBADF;
+
+if ((the process's file table was full or a process specific limit on open files was reached) or (the system's file table was full, if such a thing is possible, or a global limit on open files was reached))
+return EMFILE;
+
+
+
 return newfd;
 }
 
@@ -327,15 +415,62 @@ return newfd;
 
 pid_t sys_fork(void) {
 
+if (the current user already has too many processes or there are already too many processes on the system)
+return EMPROC;
+
+if (sufficient virtual memory for the new process was not available)
+return ENOMEM;
+
+
 return 0;
 }
 
-int sys_exec(const char *program, char **args) {
+int sys_execv(const char *program, char **args) {
+
+if (the device prefix of program did not exist)
+return ENODEV;
+
+if (the non-final component of program was not a valid directory)
+return ENOTDIR;
+
+if (program did not exist)
+return ENOENT;
+
+if (program is a directory)
+return EISDIR;
+
+if (program is not in a recognizable executable file format, was for the wrong platform, or contained invalid fields)
+return ENOEXEC;
+
+if (insufficient virtual memory is avaliable)
+return ENOMEM;
+
+if (the total size of the argument strings exceeds ARG_MAX)
+return E2BIG;
+
+if (a hardware I/O error occurred)
+return EIO;
+
+if (one of the arguments is an invalid pointer)
+return EFAULT;
 
 return 0;
 }
 
-pid_t sys_wait(pid_t pid, int *status, int options) {
+pid_t sys_waitpid(pid_t pid, int *status, int options) {
+
+if (the options argument requested invalid or unsupported options)
+return EINVAL;
+
+if (the pid argument named a process that was not a valid child of the current process)
+return ECHILD;
+
+if (the pid arguent named a nonexistent process)
+return ESRCH;
+
+if (the status argument was an invalid pointer)
+return EFAULT;
+
 
 return 0;
 }
@@ -349,7 +484,20 @@ void sys_exit(int exitcode) {
 
 int sys_chdir(const char *pathname) {
 
+if (the device prefix of pathname did not exist)
+return ENODEV;
 
+if (a non-final component of pathname was not a directory or pathname did not refer to a directory)
+return ENOTDIR;
+
+if (pathname did not exist)
+return ENOENT;
+
+if (a hardware I/O error occurred)
+return EIO;
+
+if (pathname was an invalid pointer)
+return EFAULT;
 
 return 0;
 }
