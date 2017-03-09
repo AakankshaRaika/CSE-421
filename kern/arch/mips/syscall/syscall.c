@@ -38,6 +38,7 @@
 #include <kern/unistd.h>
 #include <uio.h>
 #include <vfs.h>
+#include <sfs.h>
 #include <proc.h>
 #include <synch.h>
 #include <kern/seek.h>
@@ -205,30 +206,31 @@ enter_forked_process(struct trapframe *tf)
 /*-------------------SYS CALL WRITE----------------------*/
 /*------------------------------------------------------*/
 ssize_t sys_write(int fd, const void *buf, size_t buflen) {
-KASSERT(fd != 0);
-KASSERT(buflen > 0);	//should probably get rid of this
-KASSERT(buf != NULL);
-if ( fd == 0 ) return EBADF;      // if the fd is null return fd is not valid
-if ( buflen == 0 ) return -1;     // if buflen is not >0 return -1
-if ( buf == NULL ) return -1;     //if buf is pointing to null return invalid address space
+	KASSERT(fd != 0);
+	KASSERT(buflen > 0);	//should probably get rid of this
+	KASSERT(buf != NULL);
+	if ( fd == 0 ) return EBADF;      // if the fd is null return fd is not valid
+	if ( buflen == 0 ) return -1;     // if buflen is not >0 return -1
+	if ( buf == NULL ) return -1;     //if buf is pointing to null return invalid address space
 
 // spinlock_init(lock from this file)
 // spinlock_aquire(lock from this file)
-struct  iovec iov;
-struct uio u;      		/* what should we initilize it to?*/
-off_t pos = get_seek(fd);     	/* This will come from the lseek*/
-enum uio_rw rw;    		/* this will the UIO_VALUE*/
-rw = UIO_WRITE;
-struct addrspace *as;
-as = proc_getas();
-uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
+	struct  iovec iov;
+	struct uio u;      		/* what should we initilize it to?*/
+	off_t pos = get_seek(fd);     	/* This will come from the lseek*/
+	enum uio_rw rw;    		/* this will the UIO_VALUE*/
+	rw = UIO_WRITE;
+	struct addrspace *as;
+	as = proc_getas();
+	uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
 
- const char *filename = get_file_name(fd);
- int file_open = sys_open(filename , O_WRONLY);
- if (file_open != -1 && sizeof(buf) < buflen){
-       sys_lseek(fd,sizeof(buf),SEEK_CUR);
- }
-
+ 	const char *filename = CopyinString(); //look into this method
+ 	int file_open = sys_open(filename , O_WRONLY);
+ 	if (file_open != -1 && sizeof(buf) < buflen){
+                VOP_WRITE(curproc->f_table[fd]->vn , u);
+                set_seek (fd , sys_lseek(fd,sizeof(buf),SEEK_CUR));
+                return sizeof(buf);
+ 	}
 /*
 if (part or all of addrspace is invalid)
 return EFAULT;
@@ -241,7 +243,7 @@ return EIO;
 */
 
 
-return 0; // return 0 means nothing could be written
+	return 0; // return 0 means nothing could be written
 }
 
 /*------------------------------------------------------*/
@@ -288,6 +290,9 @@ return EIO;
 if ( filename was an invalid pointer)
 return EFAULT;
 */
+
+//do kmalloc to allocate memory on the heap for the file
+//use copyinstr before we can actually open the file
 result =vfs_open((char *) filename, flags, 0, &v);
 
 set_file_vnode(result, v);
