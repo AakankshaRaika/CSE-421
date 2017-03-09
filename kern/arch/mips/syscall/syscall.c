@@ -226,8 +226,6 @@ uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
  const char *filename = get_file_name(fd);
  int file_open = sys_open(filename , O_WRONLY);
  if (file_open != -1 && sizeof(buf) < buflen){
-
-       
        sys_lseek(fd,sizeof(buf),SEEK_CUR);
  }
 
@@ -327,6 +325,12 @@ rw = UIO_READ;
 struct addrspace *as;
 as = proc_getas();
 uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
+
+const char *filename = get_file_name(fd);
+int file_open = sys_open(filename , O_RDONLY);
+ if (file_open != -1 && sizeof(buf) < buflen){
+       sys_lseek(fd,sizeof(buf),SEEK_CUR);
+ }
 
 
 return 0;		// return byte count
