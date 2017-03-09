@@ -73,7 +73,7 @@ proc_create(const char *name)
 		return NULL;
 	}
 
-        //proc->f_table = kmalloc(sizeof(*f_t));
+        //proc->f_table = kmalloc(sizeof());
         if ( proc->f_table == NULL){
                  return NULL;
            }
