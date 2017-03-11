@@ -62,7 +62,7 @@ struct proc *
 proc_create(const char *name)
 {
 	struct proc *proc;
-        //struct _file *f_t[64];
+        struct _file *f_t[64];
 	proc = kmalloc(sizeof(*proc));
 	if (proc == NULL) {
 		return NULL;
@@ -72,20 +72,18 @@ proc_create(const char *name)
 		kfree(proc);
 		return NULL;
 	}
-
-        //proc->f_table = kmalloc(sizeof());
-        if ( proc->f_table == NULL){
-                 return NULL;
-           }
+        //TODO FIG FILE TABLE OUT , WRITE N READ N OPEN ARE IMPLEMENTED FULLY JUST NEED THIS WORKING
+        //TODO LSEEK END
+        f_t = kmalloc(sizeof(*f_t));
+        if(f_t == NULL){
+           return NULL;
+        }
 	proc->p_numthreads = 0;
 	spinlock_init(&proc->p_lock);
 
+        proc->f_table = &&f_t;
 	/* VM fields */
 	proc->p_addrspace = NULL;
-
-        /*file table*/
-        //proc->f_table = f_t;
-
 
 	/* VFS fields */
 	proc->p_cwd = NULL;

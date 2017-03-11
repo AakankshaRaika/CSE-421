@@ -46,6 +46,7 @@ struct _file{
    int fd;            /*this is the index of that vnode within the file t able*/
    off_t seek;          /*this is keeping track of the "last modified" point in the file*/
    struct spinlock spin;
+   //We will have one spin lock and one lock TODO : HINT
    const char *file_name;
 };
 

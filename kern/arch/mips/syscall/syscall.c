@@ -216,39 +216,21 @@ ssize_t sys_write(int fd, const void *buf, size_t buflen) {
 	if ( buflen == 0 ) return -1;     // if buflen is not >0 return -1
 	if ( buf == NULL ) return -1;     //if buf is pointing to null return invalid address space
 
-// spinlock_init(lock from this file)
-// spinlock_aquire(lock from this file)
 	struct  iovec iov;
 	struct uio u;      		/* what should we initilize it to?*/
-	off_t pos = get_seek(fd);     	/* This will come from the lseek*/
+	off_t pos = 0;     	/* This will come from the lseek*/
 	enum uio_rw rw;    		/* this will the UIO_VALUE*/
 	rw = UIO_WRITE;
 	struct addrspace *as;
 	as = proc_getas();
+
 	uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
-
- 	const char *filename = curproc->f_table[fd]->file_name; //look into this method
- 	int file_open = sys_open(filename , O_WRONLY);
-        struct addrspace *as_buf;
-        as_buf = kmalloc(sizeof(buf));
-        copyinstr ((const_userptr_t) filename , (char * ) as_buf, buflen , (size_t *)sizeof(buf));
-
-
- 	if (file_open != -1 && sizeof(buf) < buflen){
-                VOP_WRITE(curproc->f_table[fd]->vn , &u);
-                set_seek (fd , sys_lseek(fd,sizeof(buf),SEEK_CUR));
+        struct vnode *v;
+ 	if (sizeof(buf) < buflen){ //the error is that i am not setting the vnode before accessing the vnode
+                v = curproc->f_table[fd]->vn;
+                VOP_WRITE(v , &u);
                 return (size_t)sizeof(buf);
  	}
-/*
-if (part or all of addrspace is invalid)
-return EFAULT;
-
-if (no more free space in filesystem)
-return ENOSPC;
-
-if (hardware i/o error occurred)
-return EIO;
-*/
 	return 0; // return 0 means nothing could be written
 }
 
@@ -319,47 +301,29 @@ return -1; // returns -1 on an error
 /*------------------------------------------------------*/
 // rest of file system calls
 ssize_t sys_read(int fd, void *buf, size_t buflen) {
-//KASSERT(file is open);
-KASSERT(fd >= 0);
-//KASSERT(buf is valid); // what makes buf valid?
+        KASSERT(fd != 0);
+        KASSERT(buflen > 0);    //should probably get rid of this
+        KASSERT(buf != NULL);
+        if ( fd == 0 ) return EBADF;      // if the fd is null return fd is not valid
+        if ( buflen == 0 ) return -1;     // if buflen is not >0 return -1
+        if ( buf == NULL ) return -1;     //if buf is pointing to null return invalid address space
 
-/*
-if (fd is not a valid file descriptor or was not opened for reading)
-return EBADF;
-
-if (part or all of the address space pointed to by buf is invalid)
-return EFAULT;
-
-if (a hardware I/O error occurred reaeding the data)
-return EIO;
-*/
-
-// spinlock_init(lock from this file)
-// spinlock_aquire(lock from this file)
         struct  iovec iov;
         struct uio u;                   /* what should we initilize it to?*/
-        off_t pos = get_seek(fd);       /* This will come from the lseek*/
+        off_t pos = 0;          /* This will come from the lseek*/
         enum uio_rw rw;                 /* this will the UIO_VALUE*/
         rw = UIO_READ;
         struct addrspace *as;
         as = proc_getas();
+
         uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
-
-        const char *filename = curproc->f_table[fd]->file_name; //look into this method
-        int file_open = sys_open(filename , O_RDONLY);
-        struct addrspace *as_buf;
-        as_buf = kmalloc(sizeof(buf));
-        copyinstr ((const_userptr_t) filename , (char * ) as_buf, buflen , (size_t *)sizeof(buf));
-
-
-        if (file_open != -1 && sizeof(buf) < buflen){
-                VOP_READ(curproc->f_table[fd]->vn , &u);
-                set_seek (fd , sys_lseek(fd,sizeof(buf),SEEK_CUR));
+        struct vnode *v;
+        if (sizeof(buf) < buflen){
+                v = curproc->f_table[fd]->vn;
+                VOP_READ(v , &u);
                 return (size_t)sizeof(buf);
         }
-
-
-return 0;		// return byte count
+        return 0; // return 0 means nothing could be written
 }
 
 
@@ -386,26 +350,13 @@ return 0;		// return 0 on success
 /*-------------------SYS CALL LSEEK---------------------*/
 /*------------------------------------------------------*/
 off_t sys_lseek(int fd, off_t pos, int whence) {
-//KASSERT(seek position > 0);
 KASSERT(fd > 0);
-//spinlock_aquire();
 
-/*
-if (fd is not a valid file handle)
-return EBADF;
-
-if (fd refers to an object which does not support seeking)
-return ESPIPE;
-
-if (whence is invalid or the resulting seek position would be negative)
-return EINVAL;
-
-*/
 if (whence == SEEK_SET) set_seek(fd, pos);
 
 else if (whence == SEEK_CUR) set_seek(fd, get_seek(fd)+pos);
 
-//if (whence == SEEK_END) set_seek(fd,  // how to get end of file position
+else if (whence == SEEK_END) set_seek(fd,sizeof(curproc->f_table[fd]->vn));
 
 else return -1;
 
