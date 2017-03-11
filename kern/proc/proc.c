@@ -62,7 +62,7 @@ struct proc *
 proc_create(const char *name)
 {
 	struct proc *proc;
-        struct _file *f_t[64];
+        struct _file *f_t;
 	proc = kmalloc(sizeof(*proc));
 	if (proc == NULL) {
 		return NULL;
@@ -81,7 +81,7 @@ proc_create(const char *name)
 	proc->p_numthreads = 0;
 	spinlock_init(&proc->p_lock);
 
-        proc->f_table = &&f_t;
+        //proc->f_table = &&f_t;
 	/* VM fields */
 	proc->p_addrspace = NULL;
 

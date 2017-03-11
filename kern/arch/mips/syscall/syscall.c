@@ -244,41 +244,6 @@ int sys_open(const char *filename, int flags){
 //struct addrspace *as;
 struct vnode *v;
 int result; // this is the file handle
-
-/*
-if (device prefix of filename does not exist)
-return ENODEV;
-
-if (a non-final component of filename was not a directory)
-return ENOTDIR;
-
-if (a non-final component of filename does not exist or (the named file does not exist and O_CREAT was not specified))
-return ENOENT;
-
-if (the file exists and O_EXCL was specified)
-return EEXIST;
-
-if (the named object is a directory and it was able to be opened for writing) return EISDIR;
-
-if ((the process's file table was full or a process specific limit on open files was reached) or the system file table is full, if such a thing exists or a system-wide limit on open files was reached)
-return EMFILE;
-
-if (the named object is a block device with no filesystem mounted to it)
-return ENXIO;
-
-if (the file was to be created and the filesystem involved was full)
-return ENOSPC;
-
-if (flags contained invalid values)
-return EINVAL;
-
-if ( a hardware I/O error occurred)
-return EIO;
-
-if ( filename was an invalid pointer)
-return EFAULT;
-*/
-
 //do kmalloc to allocate memory on the heap for the file
 
 struct addrspace *as;
@@ -330,21 +295,14 @@ ssize_t sys_read(int fd, void *buf, size_t buflen) {
 /*------------------------------------------------------*/
 /*-------------------SYS CALL CLOSE---------------------*/
 /*------------------------------------------------------*/
-/*
+
 int sys_close(int fd) {
-
 KASSERT(fd > 0);
-
-if (fd is not a valid file handle)
-return EBADF;
-
-if (a hardware I/O error occurred)
-return EIO;
-
-				// return -1 on error
-return 0;		// return 0 on success
+//TODO handle a bad _ close with kasserts and if's 
+//int result;
+vfs_close(curproc->f_table[fd]->vn);
+return 0;       		// return 0 on success
 }
-*/
 
 /*------------------------------------------------------*/
 /*-------------------SYS CALL LSEEK---------------------*/
