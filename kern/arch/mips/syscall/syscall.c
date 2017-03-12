@@ -359,15 +359,21 @@ struct vnode *v = curproc->p_cwd;
 
 vfs_open
 
-find index given fd from file table, given buf or vnode
+find fd from file table, given buf or vnode
+
+// how to compare vnodes or bufs?
 
 get seek pos, seek end
 
 check tag to make sure it is coming from write
 
+// what is tag?
+
 return seek end - seek pos
 
+// how to get seek end?
 
+once have fd, can call get_seek(fd);
    
 
 
@@ -452,7 +458,6 @@ return ESRCH;
 if (the status argument was an invalid pointer)
 return EFAULT;
 
-
 return 0;
 }
 */
@@ -466,11 +471,11 @@ void sys_exit(int exitcode) {
 }
 */
 
-/*
+
 // "easy" system calls
 
 int sys_chdir(const char *pathname) {
-
+/*
 if (the device prefix of pathname did not exist)
 return ENODEV;
 
@@ -486,9 +491,19 @@ return EIO;
 if (pathname was an invalid pointer)
 return EFAULT;
 
+get vnode from pathname, pathname should be in the file table?
+
+vfs_setcurdir(vnode);
+
+---or---
+
+*/
+vfs_chdir((char *)pathname);
+
+
 return 0;
 }
-
+/*
 pid_t sys_getpid(void) {
 
 return 0;
