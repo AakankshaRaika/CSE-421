@@ -388,6 +388,18 @@ return EMPROC;
 if (sufficient virtual memory for the new process was not available)
 return ENOMEM;
 
+
+should create a new process copying the following from the current process:
+-parents trapframe
+-parents address space
+-parents filetable
+
+create new PID, assign PPID to current process's PID
+call thread_fork to do the rest of the work
+
+in the child process, 0 is returned
+in the parent process, pid of child is returned
+
 return 0;
 }
 */
@@ -447,6 +459,16 @@ return ESRCH;
 if (the status argument was an invalid pointer)
 return EFAULT;
 
+used by parent process to wait for child process to exit
+
+need to:
+-check if the PID passed is valid and belongs to a child process of the current process
+-check if the status pointer is valid
+-check if the options passed are valid
+-return an exit status in the status pointer
+
+should use a synchronization primitive to wait for child process to exit
+
 return 0;
 }
 */
@@ -456,7 +478,13 @@ return 0;
 /*------------------------------------------------------*/
 /*
 void sys_exit(int exitcode) {
+causes current process to exit
 
+need to:
+-store the exit code in the current process structure
+	-should use _MKWAIT_EXIT macro with user supplied exit code value to prepare the exit status --> check kern/include/kern/wait.h
+-indicate that the process exited in current process structure
+-call thread_exit
 }
 */
 
@@ -495,6 +523,8 @@ return 0;
 /*
 pid_t sys_getpid(void) {
 
-return 0;
+KASSERT(curproc->pid != null);
+
+return curproc->pid;
 }
 */
