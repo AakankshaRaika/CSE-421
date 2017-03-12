@@ -351,38 +351,22 @@ set_file_name(newfd, filename);
 return newfd;
 }
 
-/*
+
 int sys__getcwd(char *buf, size_t buflen){
 KASSERT(buflen > 0);
 KASSERT(buf != NULL);
 struct vnode *v = curproc->p_cwd;
+//check tag to make sure it is coming from write
 
-
-find fd from file table, given buf or vnode
-
-// how to compare vnodes or bufs?
-
-get seek pos, seek end
-
-check tag to make sure it is coming from write
-
-// what is tag?
-
-return seek end - seek pos
-
-// how to get seek end?
-
-once have fd, can call get_seek(fd);
-   
 int fd = get_fd(v);
 
 off_t pos = get_seek(fd);
 
 off_t end = sizeof(curproc->f_table[fd]->vn);
 
-return (int)end - pos;
+return (int)(end - pos);
 }
-*/
+
 
 
 

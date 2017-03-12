@@ -118,20 +118,6 @@ void set_file_name (int file_discriptor, const char * file_name){
    curproc->f_table[file_discriptor]->file_name = file_name;
 }
 
-
-int get_fd(const char *name) {
-	int fd = 0;
-
-	while (fd < 64) {
-			if (name == curproc->f_table[fd]->file_name) return fd;
-			else fd++;
-	}
-	return 0;
-}
-
-/*
-if can't compare const char *
-
 int get_fd(struct vnode *vn) {
 	int fd = 0;
 	
@@ -145,7 +131,6 @@ int get_fd(struct vnode *vn) {
 
 
 
-   */
 
 /*
  * Destroy a proc structure.

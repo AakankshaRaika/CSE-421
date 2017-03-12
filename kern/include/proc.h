@@ -98,12 +98,7 @@ void set_seek (int fd , int seek);
 /**/
 off_t get_seek (int fd);
 
-int get_fd(const char *name);
-/*
-if can't compare const char *
-
 int get_fd(struct vnode *vn);
-   */
 
 void set_file_name(int file_descriptor, const char *file_name);
 
