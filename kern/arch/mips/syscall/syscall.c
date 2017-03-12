@@ -357,7 +357,6 @@ KASSERT(buflen > 0);
 KASSERT(buf != NULL);
 struct vnode *v = curproc->p_cwd;
 
-vfs_open
 
 find fd from file table, given buf or vnode
 
@@ -375,9 +374,13 @@ return seek end - seek pos
 
 once have fd, can call get_seek(fd);
    
+int fd = get_fd(v);
 
+off_t pos = get_seek(fd);
 
-return 0;
+off_t end = sizeof(curproc->f_table[fd]->vn);
+
+return (int)end - pos;
 }
 */
 
