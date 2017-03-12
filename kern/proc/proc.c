@@ -48,6 +48,8 @@
 #include <current.h>
 #include <addrspace.h>
 #include <vnode.h>
+#include <kern/unistd.h>
+#include <vfs.h>
 
 /*
  * The process for the kernel; this holds all the kernel-only threads.
@@ -74,14 +76,15 @@ proc_create(const char *name)
 	}
         //TODO FIG FILE TABLE OUT , WRITE N READ N OPEN ARE IMPLEMENTED FULLY JUST NEED THIS WORKING
         //TODO LSEEK END
+        //make_table(f_t);
         f_t = kmalloc(sizeof(*f_t));
         if(f_t == NULL){
-           return NULL;
+          return NULL;
         }
+
 	proc->p_numthreads = 0;
 	spinlock_init(&proc->p_lock);
 
-        //proc->f_table = &&f_t;
 	/* VM fields */
 	proc->p_addrspace = NULL;
 
@@ -227,6 +230,9 @@ struct proc *
 proc_create_runprogram(const char *name)
 {
 	struct proc *newproc;
+	struct vnode *vn1;
+        struct vnode *vn2;
+        struct vnode *vn3;
 
 	newproc = proc_create(name);
 	if (newproc == NULL) {
@@ -248,9 +254,15 @@ proc_create_runprogram(const char *name)
 	if (curproc->p_cwd != NULL) {
 		VOP_INCREF(curproc->p_cwd);
 		newproc->p_cwd = curproc->p_cwd;
+
+        vfs_open((char *)"con:",STDIN_FILENO,0,&vn1);
+	vfs_open((char *)"con:",STDOUT_FILENO,1,&vn2);
+        vfs_open((char *)"con:",STDERR_FILENO,2,&vn3);
+        set_file_vnode(0,vn1);
+        set_file_vnode(1,vn2);
+        set_file_vnode(2,vn3);
 	}
 	spinlock_release(&curproc->p_lock);
-
 	return newproc;
 }
 

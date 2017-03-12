@@ -168,18 +168,6 @@ void
 uio_Userinit(struct iovec *iov, struct uio *u,
           void *kbuf, size_t len, off_t pos, enum uio_rw rw, struct addrspace *as)
 {
-        struct vnode *vn1;
-        struct vnode *vn2;
-        struct vnode *vn3;
-
-        vfs_open((char *)"con:",STDIN_FILENO,0,&vn1);
-	vfs_open((char *)"con:",STDOUT_FILENO,1,&vn2);
-	vfs_open((char *)"con:",STDERR_FILENO,2,&vn3);
-
-        //set_file_vnode(0,vn1);
-        curproc->f_table[1]->vn = vn2;
-	//set_file_vnode(2,vn3);
-
         iov->iov_kbase = kbuf;
         iov->iov_len = len;
         u->uio_iov = iov;
