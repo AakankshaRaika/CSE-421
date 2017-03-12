@@ -153,6 +153,7 @@ syscall(struct trapframe *tf)
 		case SYS___getcwd:
 			err=sys__getcwd((char *)tf->tf_a0, (size_t)tf->tf_a1);
 			break;
+
 */
 		default:
 			kprintf("Unknown syscall %d\n", callno);
@@ -297,7 +298,9 @@ ssize_t sys_read(int fd, void *buf, size_t buflen) {
 /*------------------------------------------------------*/
 
 int sys_close(int fd) {
-KASSERT(fd > 0);
+//KASSERT(fd > 0 && fd < 64);
+if (fd < 0 || fd > 63)
+		return EBADF;
 //TODO handle a bad _ close with kasserts and if's 
 //int result;
 vfs_close(curproc->f_table[fd]->vn);
@@ -331,10 +334,8 @@ int sys_dup2(int oldfd, int newfd) {
 KASSERT(oldfd > 0);
 KASSERT(newfd > 0);
 
-// on error return -1;
-
-//if (oldfd is not a valid file handle, or newfd is a value that cannot be a valid file handle)
-//return EBADF;
+if (oldfd < 0 || newfd < 0 || oldfd > 63 || newfd > 63)
+return EBADF;
 
 //if ((the process's file table was full or a process specific limit on open files was reached) or (the system's file table was full, if such a thing is possible, or a global limit on open files was reached))
 //return EMFILE;
@@ -353,18 +354,19 @@ return newfd;
 
 
 int sys__getcwd(char *buf, size_t buflen){
-KASSERT(buflen > 0);
-KASSERT(buf != NULL);
-struct vnode *v = curproc->p_cwd;
+
+	KASSERT(buflen > 0);
+	KASSERT(buf != NULL);
+	struct vnode *v = curproc->p_cwd;
 //check tag to make sure it is coming from write
 
-int fd = get_fd(v);
+	int fd = get_fd(v);
 
-off_t pos = get_seek(fd);
+	off_t pos = get_seek(fd);
 
-off_t end = sizeof(curproc->f_table[fd]->vn);
+	off_t end = sizeof(curproc->f_table[fd]->vn);
 
-return (int)(end - pos);
+	return (int)(end - pos);
 }
 
 
@@ -475,7 +477,7 @@ return ENOENT;
 if (a hardware I/O error occurred)
 return EIO;
 
-if (pathname was an invalid pointer)
+if (pathname == NULL)
 return EFAULT;
 
 get vnode from pathname, pathname should be in the file table?
@@ -485,7 +487,7 @@ vfs_setcurdir(vnode);
 ---or---
 
 */
-vfs_chdir((char *)pathname);
+int result = vfs_chdir((char *)pathname);
 
 
 return 0;
