@@ -130,7 +130,7 @@ syscall(struct trapframe *tf)
 			err = sys_write(tf->tf_a0,(const void *)tf->tf_a1,(size_t)tf->tf_a2);
 			break;
 
-	case SYS_read:
+		case SYS_read:
 			err=sys_read(tf->tf_a0,(void *)tf->tf_a1,(size_t)tf->tf_a2);
 			break;
 /*
@@ -301,7 +301,7 @@ KASSERT(fd > 0);
 //TODO handle a bad _ close with kasserts and if's 
 //int result;
 vfs_close(curproc->f_table[fd]->vn);
-return 0;       		// return 0 on success
+return 0;       	// return 0 on success
 }
 
 /*------------------------------------------------------*/
@@ -325,7 +325,7 @@ return get_seek(fd);	// returns new position on success
 /*------------------------------------------------------*/
 /*-------------------SYS CALL DUP2----------------------*/
 /*------------------------------------------------------*/
-/*
+
 int sys_dup2(int oldfd, int newfd) {
 
 KASSERT(oldfd > 0);
@@ -333,15 +333,51 @@ KASSERT(newfd > 0);
 
 // on error return -1;
 
-if (oldfd is not a valid file handle, or newfd is a value that cannot be a valid file handle)
-return EBADF;
+//if (oldfd is not a valid file handle, or newfd is a value that cannot be a valid file handle)
+//return EBADF;
 
-if ((the process's file table was full or a process specific limit on open files was reached) or (the system's file table was full, if such a thing is possible, or a global limit on open files was reached))
-return EMFILE;
+//if ((the process's file table was full or a process specific limit on open files was reached) or (the system's file table was full, if such a thing is possible, or a global limit on open files was reached))
+//return EMFILE;
+
+struct vnode *vn = get_file_vnode(oldfd);
+off_t seek = get_seek(oldfd);
+const char *filename = get_file_name(oldfd);
+
+set_file_vnode(newfd, vn);
+set_seek(newfd, seek);
+set_file_name(newfd, filename);
+
 
 return newfd;
 }
+
+/*
+int sys__getcwd(char *buf, size_t buflen){
+KASSERT(buflen > 0);
+KASSERT(buf != NULL);
+struct vnode *v = curproc->p_cwd;
+
+vfs_open
+
+find index given fd from file table, given buf or vnode
+
+get seek pos, seek end
+
+check tag to make sure it is coming from write
+
+return seek end - seek pos
+
+
+   
+
+
+return 0;
+}
 */
+
+
+
+
 
 
 /*------------------------------------------------------*/
