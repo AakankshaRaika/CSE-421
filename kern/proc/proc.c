@@ -88,6 +88,13 @@ proc_create(const char *name)
 	/* VFS fields */
 	proc->p_cwd = NULL;
 
+	/*
+	potential additions for process syscalls
+	proc->pid = get last pid, last pid + 1
+	proc->ppid = should probably assign in fork
+
+	   */
+
 	return proc;
 }
 
