@@ -91,6 +91,13 @@ proc_create(const char *name)
 	/* VFS fields */
 	proc->p_cwd = NULL;
 
+	/*
+	potential additions for process syscalls
+	proc->pid = get last pid, last pid + 1
+	proc->ppid = should probably assign in fork
+
+	   */
+
 	return proc;
 }
 
@@ -120,6 +127,20 @@ const char * get_file_name (int file_discriptor){
 void set_file_name (int file_discriptor, const char * file_name){
    curproc->f_table[file_discriptor]->file_name = file_name;
 }
+
+int get_fd(struct vnode *vn) {
+	int fd = 0;
+	
+	while (fd < 64) {
+		if (vn == curproc->f_table[fd]->vn) return fd;
+		else fd++;
+	}
+	return 0;
+}
+
+
+
+
 
 /*
  * Destroy a proc structure.

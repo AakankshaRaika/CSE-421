@@ -153,6 +153,7 @@ syscall(struct trapframe *tf)
 		case SYS___getcwd:
 			err=sys__getcwd((char *)tf->tf_a0, (size_t)tf->tf_a1);
 			break;
+
 */
 		default:
 			kprintf("Unknown syscall %d\n", callno);
@@ -297,7 +298,9 @@ ssize_t sys_read(int fd, void *buf, size_t buflen) {
 /*------------------------------------------------------*/
 
 int sys_close(int fd) {
-KASSERT(fd > 0);
+//KASSERT(fd > 0 && fd < 64);
+if (fd < 0 || fd > 63)
+		return EBADF;
 //TODO handle a bad _ close with kasserts and if's 
 //int result;
 vfs_close(curproc->f_table[fd]->vn);
@@ -331,10 +334,8 @@ int sys_dup2(int oldfd, int newfd) {
 KASSERT(oldfd > 0);
 KASSERT(newfd > 0);
 
-// on error return -1;
-
-//if (oldfd is not a valid file handle, or newfd is a value that cannot be a valid file handle)
-//return EBADF;
+if (oldfd < 0 || newfd < 0 || oldfd > 63 || newfd > 63)
+return EBADF;
 
 //if ((the process's file table was full or a process specific limit on open files was reached) or (the system's file table was full, if such a thing is possible, or a global limit on open files was reached))
 //return EMFILE;
@@ -351,29 +352,23 @@ set_file_name(newfd, filename);
 return newfd;
 }
 
-/*
+
 int sys__getcwd(char *buf, size_t buflen){
-KASSERT(buflen > 0);
-KASSERT(buf != NULL);
-struct vnode *v = curproc->p_cwd;
 
-vfs_open
+	KASSERT(buflen > 0);
+	KASSERT(buf != NULL);
+	struct vnode *v = curproc->p_cwd;
+//check tag to make sure it is coming from write
 
-find index given fd from file table, given buf or vnode
+	int fd = get_fd(v);
 
-get seek pos, seek end
+	off_t pos = get_seek(fd);
 
-check tag to make sure it is coming from write
+	off_t end = sizeof(curproc->f_table[fd]->vn);
 
-return seek end - seek pos
-
-
-   
-
-
-return 0;
+	return (int)(end - pos);
 }
-*/
+
 
 
 
@@ -392,6 +387,18 @@ return EMPROC;
 
 if (sufficient virtual memory for the new process was not available)
 return ENOMEM;
+
+
+should create a new process copying the following from the current process:
+-parents trapframe
+-parents address space
+-parents filetable
+
+create new PID, assign PPID to current process's PID
+call thread_fork to do the rest of the work
+
+in the child process, 0 is returned
+in the parent process, pid of child is returned
 
 return 0;
 }
@@ -452,6 +459,15 @@ return ESRCH;
 if (the status argument was an invalid pointer)
 return EFAULT;
 
+used by parent process to wait for child process to exit
+
+need to:
+-check if the PID passed is valid and belongs to a child process of the current process
+-check if the status pointer is valid
+-check if the options passed are valid
+-return an exit status in the status pointer
+
+should use a synchronization primitive to wait for child process to exit
 
 return 0;
 }
@@ -462,15 +478,21 @@ return 0;
 /*------------------------------------------------------*/
 /*
 void sys_exit(int exitcode) {
+causes current process to exit
 
+need to:
+-store the exit code in the current process structure
+	-should use _MKWAIT_EXIT macro with user supplied exit code value to prepare the exit status --> check kern/include/kern/wait.h
+-indicate that the process exited in current process structure
+-call thread_exit
 }
 */
 
-/*
+
 // "easy" system calls
 
 int sys_chdir(const char *pathname) {
-
+/*
 if (the device prefix of pathname did not exist)
 return ENODEV;
 
@@ -483,14 +505,26 @@ return ENOENT;
 if (a hardware I/O error occurred)
 return EIO;
 
-if (pathname was an invalid pointer)
+if (pathname == NULL)
 return EFAULT;
+
+get vnode from pathname, pathname should be in the file table?
+
+vfs_setcurdir(vnode);
+
+---or---
+
+*/
+int result = vfs_chdir((char *)pathname);
+
 
 return 0;
 }
-
+/*
 pid_t sys_getpid(void) {
 
-return 0;
+KASSERT(curproc->pid != null);
+
+return curproc->pid;
 }
 */

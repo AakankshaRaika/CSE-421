@@ -43,7 +43,7 @@ struct thread;
 struct vnode;
 struct _file{
    struct vnode *vn;  /*this is the vnode pointing to that perticular file*/
-   int fd;            /*this is the index of that vnode within the file t able*/
+   int fd;            /*this is the index of that vnode within the file table*/
    off_t seek;          /*this is keeping track of the "last modified" point in the file*/
    struct spinlock spin;
    //We will have one spin lock and one lock TODO : HINT
@@ -82,6 +82,10 @@ struct proc {
 	struct vnode *p_cwd;		/* current working directory */
 
 	/* add more material here as needed */
+	pid_t pid;	// process id
+	pid_t ppid; // parent pid
+
+	int exit_code;
 };
 
 /* This is the process structure for the kernel and for kernel-only threads. */
@@ -98,6 +102,7 @@ void set_seek (int fd , int seek);
 /**/
 off_t get_seek (int fd);
 
+int get_fd(struct vnode *vn);
 
 void set_file_name(int file_descriptor, const char *file_name);
 
