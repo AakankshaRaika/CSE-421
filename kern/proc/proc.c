@@ -73,13 +73,13 @@ proc_create(const char *name)
 		kfree(proc);
 		return NULL;
 	}
-
-        *proc->f_table = kmalloc( 64 * sizeof (struct _file));		//allocating mem to the entire table
-        for (int i = 0 ; i < 64 ; i++){
-                proc->f_table[i] = kmalloc (sizeof(struct _file)); 	//alocating memory to every file indiviually
-	        proc->f_table[i]->vn = NULL;
-                proc->f_table[i]->file_name = NULL; 				//assigning the fd's to NULL after creater the memory
-        }
+	
+	*proc->f_table = kmalloc( 64 * sizeof (struct _file));		//allocating mem to the entire table
+	for (int i = 0 ; i < 64 ; i++){
+		proc->f_table[i] = kmalloc (sizeof(struct _file)); 	//alocating memory to every file indiviually
+		proc->f_table[i]->vn = NULL;
+		proc->f_table[i]->file_name = NULL; 				//assigning the fd's to NULL after creater the memory
+	}
 
 	proc->p_numthreads = 0;
 	spinlock_init(&proc->p_lock);
@@ -239,8 +239,8 @@ proc_create_runprogram(const char *name)
 {
 	struct proc *newproc;
 	struct vnode *vn1;
-        struct vnode *vn2;
-        //struct vnode *vn3;
+	struct vnode *vn2;
+	struct vnode *vn3;
 	newproc = proc_create(name);
 	if (newproc == NULL) {
 		return NULL;
@@ -262,31 +262,31 @@ proc_create_runprogram(const char *name)
 	if (curproc->p_cwd != NULL) {
 		VOP_INCREF(curproc->p_cwd);
 		newproc->p_cwd = curproc->p_cwd;
-
 	}
 	spinlock_release(&curproc->p_lock);
-        /*
-        int stdin  = vfs_open((char *)"con:",STDIN_FILENO,0,&vn1);
+	int stdin  = vfs_open((char *)"con:",STDIN_FILENO,0,&vn1);
 	if(stdin == 0){
-         newproc->f_table[0]->vn = vn1;
-         newproc->f_table[0]->file_name = "con:";
-	 newproc->f_table[0]->seek = 0;
-
-        } */
+		newproc->f_table[0]->vn = vn1;
+		newproc->f_table[0]->file_name = "con:";
+	 	newproc->f_table[0]->seek = 0;
+	} 
 	int stdout = vfs_open((char *)"con:",STDOUT_FILENO,1,&vn2);
-        if(stdout == 0){
-	 newproc->f_table[1]->vn = vn2;
-         newproc->f_table[1]->file_name = "con:";
-         newproc->f_table[1]->seek = 0;
+	
+	if(stdout == 0){
+		newproc->f_table[1]->vn = vn2;
+		newproc->f_table[1]->file_name = "con:";
+		newproc->f_table[1]->seek = 0;
 	}
-        /*
-        int stderr = vfs_open((char *)"con:",STDERR_FILENO,2,&vn3);
+	
+	int stderr = vfs_open((char *)"con:",STDERR_FILENO,2,&vn3);
+	
 	if(stderr == 0){
-         newproc->f_table[2]->vn = vn3;
-         newproc->f_table[2]->file_name = "con:";
-         newproc->f_table[2]->seek = 0;
-        } */
+		newproc->f_table[2]->vn = vn3;
+		newproc->f_table[2]->file_name = "con:";
+		newproc->f_table[2]->seek = 0;
+	} 
 	return newproc;
+
 }
 
 /*

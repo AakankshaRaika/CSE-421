@@ -515,7 +515,7 @@ vfs_setcurdir(vnode);
 ---or---
 
 */
-int result = vfs_chdir((char *)pathname);
+vfs_chdir((char *)pathname);
 
 
 return 0;
