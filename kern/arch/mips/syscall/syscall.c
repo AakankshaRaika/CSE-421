@@ -226,8 +226,8 @@ ssize_t sys_write(int fd, const void *buf, size_t buflen) {
 	as = proc_getas();
 
 	uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
-        struct vnode *v = curproc->f_table[fd]->vn;
-	if (v == NULL) return EBADF;
+        struct vnode *v = curproc->f_table[fd]->vn; // since error was from trying to write to a null vnode, should initialize it then check if it is null
+	if (v == NULL) return EBADF; // should return EBADF since fd isn't valid because it hasn't been opened yet in sys_open
  	if (sizeof(buf) < buflen){ //the error is that i am not setting the vnode before accessing the vnode
                 //v = curproc->f_table[fd]->vn;
                 VOP_WRITE(v , &u);
