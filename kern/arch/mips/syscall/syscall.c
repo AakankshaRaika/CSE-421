@@ -211,10 +211,10 @@ enter_forked_process(struct trapframe *tf)
 /*------------------------------------------------------*/
 ssize_t sys_write(int fd, const void *buf, size_t buflen) {
 	KASSERT(fd != 0);
-	KASSERT(buflen > 0);	//should probably get rid of this
+	//KASSERT(buflen > 0);	//should probably get rid of this
 	KASSERT(buf != NULL);
 	if ( fd == 0 ) return EBADF;      // if the fd is null return fd is not valid
-	if ( buflen == 0 ) return -1;     // if buflen is not >0 return -1
+	if ( buflen <= 0 ) return -1;     // if buflen is not >0 return -1
 	if ( buf == NULL ) return -1;     //if buf is pointing to null return invalid address space
 
 	struct  iovec iov;
@@ -226,9 +226,10 @@ ssize_t sys_write(int fd, const void *buf, size_t buflen) {
 	as = proc_getas();
 
 	uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
-        struct vnode *v;
+        struct vnode *v = curproc->f_table[fd]->vn;
+	if (v == NULL) return EBADF;
  	if (sizeof(buf) < buflen){ //the error is that i am not setting the vnode before accessing the vnode
-                v = curproc->f_table[fd]->vn;
+                //v = curproc->f_table[fd]->vn;
                 VOP_WRITE(v , &u);
                 return (size_t)sizeof(buf);
  	}
