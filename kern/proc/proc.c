@@ -73,7 +73,6 @@ proc_create(const char *name)
 		kfree(proc);
 		return NULL;
 	}
-	
 	*proc->f_table = kmalloc( 64 * sizeof (struct _file));		//allocating mem to the entire table
 	for (int i = 0 ; i < 64 ; i++){
 		proc->f_table[i] = kmalloc (sizeof(struct _file)); 	//alocating memory to every file indiviually
@@ -266,29 +265,30 @@ proc_create_runprogram(const char *name)
 		newproc->p_cwd = curproc->p_cwd;
 	}
 	spinlock_release(&curproc->p_lock);
-	int stdin  = vfs_open((char *)"con:",STDIN_FILENO,0664,&vn1);  //TA said should be this value
+
+        char *console_name = NULL;
+        console_name = kstrdup("con:");
+	int stdin  = vfs_open(console_name,STDIN_FILENO,0664,&vn1);  //TA said should be this value
 	if(stdin == 0){
 		newproc->f_table[0]->vn = vn1;
-		newproc->f_table[0]->file_name = "con:";
+		newproc->f_table[0]->file_name = console_name;
 	 	newproc->f_table[0]->seek = 0;
-	} 
-	
-	
-	int stdout = vfs_open((char *)"con:",STDOUT_FILENO,0664,&vn2);  //TA said should be this value
-	
+	}
+
+	int stdout = vfs_open(console_name,STDOUT_FILENO,0664,&vn2);  //TA said should be this value
 	if(stdout == 0){
 		newproc->f_table[1]->vn = vn2;
-		newproc->f_table[1]->file_name = "con:";
+		newproc->f_table[1]->file_name = console_name;
 		newproc->f_table[1]->seek = 0;
 	}
-	
-	int stderr = vfs_open((char *)"con:",STDERR_FILENO,0664,&vn3);  //TA said should be this value
-	
+
+	int stderr = vfs_open(console_name,STDERR_FILENO,0664,&vn3);  //TA said should be this value
 	if(stderr == 0){
 		newproc->f_table[2]->vn = vn3;
-		newproc->f_table[2]->file_name = "con:";
+		newproc->f_table[2]->file_name = console_name;
 		newproc->f_table[2]->seek = 0;
-	} 
+	}
+
 	return newproc;
 
 }
