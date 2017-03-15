@@ -258,19 +258,23 @@ proc_create_runprogram(const char *name)
 	 * (We don't need to lock the new process, though, as we have
 	 * the only reference to it.)
 	 */
+
+
 	spinlock_acquire(&curproc->p_lock);
 	if (curproc->p_cwd != NULL) {
 		VOP_INCREF(curproc->p_cwd);
 		newproc->p_cwd = curproc->p_cwd;
 	}
 	spinlock_release(&curproc->p_lock);
-	int stdin  = vfs_open((char *)"con:",STDIN_FILENO,0,&vn1);
+	int stdin  = vfs_open((char *)"con:",STDIN_FILENO,0664,&vn1);  //TA said should be this value
 	if(stdin == 0){
 		newproc->f_table[0]->vn = vn1;
 		newproc->f_table[0]->file_name = "con:";
 	 	newproc->f_table[0]->seek = 0;
 	} 
-	int stdout = vfs_open((char *)"con:",STDOUT_FILENO,1,&vn2);
+	
+	
+	int stdout = vfs_open((char *)"con:",STDOUT_FILENO,0664,&vn2);  //TA said should be this value
 	
 	if(stdout == 0){
 		newproc->f_table[1]->vn = vn2;
@@ -278,7 +282,7 @@ proc_create_runprogram(const char *name)
 		newproc->f_table[1]->seek = 0;
 	}
 	
-	int stderr = vfs_open((char *)"con:",STDERR_FILENO,2,&vn3);
+	int stderr = vfs_open((char *)"con:",STDERR_FILENO,0664,&vn3);  //TA said should be this value
 	
 	if(stderr == 0){
 		newproc->f_table[2]->vn = vn3;

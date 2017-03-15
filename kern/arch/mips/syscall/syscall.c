@@ -226,7 +226,7 @@ ssize_t sys_write(int fd, const void *buf, size_t buflen) {
 	as = proc_getas();
 
 	uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
-        struct vnode *v = curproc->f_table[fd]->vn; // since error was from trying to write to a null vnode, should initialize it then check if it is null
+	struct vnode *v = curproc->f_table[fd]->vn; // since error was from trying to write to a null vnode, should initialize it then check if it is null
 	if (v == NULL) return EBADF; // should return EBADF since fd isn't valid because it hasn't been opened yet in sys_open
  	if (sizeof(buf) < buflen){ //the error is that i am not setting the vnode before accessing the vnode
                 //v = curproc->f_table[fd]->vn;
@@ -244,23 +244,25 @@ int sys_open(const char *filename, int flags){
 //KASSERT(flags >= 0);
 //KASSERT(flags == O_RDONLY || flags == O_WRONLY);
 //struct addrspace *as;
-struct vnode *v;
-int result; // this is the file handle
+	struct vnode *v;
+	int result; // this is the file handle
 //do kmalloc to allocate memory on the heap for the file
 
-struct addrspace *as;
-as = kmalloc(sizeof(filename));
-
-size_t actual;
-copyinstr((const_userptr_t) filename, (char *)as, (size_t )MAX_PATH, &actual);
-
-result =vfs_open((char *) filename, flags, 0, &v);
-set_file_vnode(result, v);
-set_file_name (result , filename);
-if (result) return result;
+//struct addrspace *as;
+//as = kmalloc(sizeof(filename));
+	char *as = kmalloc(128 * sizeof(char)); // TA said this should be char * and this is correctly allocating enough memory
 
 
-return -1; // returns -1 on an error
+	size_t actual;
+	copyinstr((const_userptr_t) filename, as, (size_t )MAX_PATH, &actual);  // puts filename into as
+
+	result =vfs_open(as, flags, 0, &v);  // should open with as not filename
+	set_file_vnode(result, v);
+	set_file_name (result , filename);
+	if (result) return result;
+
+
+	return -1; // returns -1 on an error
 }
 
 /*------------------------------------------------------*/
