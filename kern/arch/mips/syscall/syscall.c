@@ -108,7 +108,6 @@ syscall(struct trapframe *tf)
 	 */
 
 	retval = 0;
-//	struct lock *lock;
 
 	switch (callno) {
 	    case SYS_reboot:
@@ -119,8 +118,6 @@ syscall(struct trapframe *tf)
 			err = sys___time((userptr_t)tf->tf_a0,
 			(userptr_t)tf->tf_a1);
 			break;
-
-	    /* Add stuff here */
 
             case SYS_open:
 			err = sys_open((const char *)tf->tf_a0,tf->tf_a1);
@@ -160,8 +157,6 @@ syscall(struct trapframe *tf)
 			err = ENOSYS;
 			break;
 	}
-
-//	spinlock_init(&lock->lk_lock);
 
 	if (err) {
 		/*
@@ -213,29 +208,30 @@ ssize_t sys_write(int fd, const void *buf, size_t buflen) {
 	KASSERT(fd != 0);
 	//KASSERT(buflen > 0);	//should probably get rid of this
 	KASSERT(buf != NULL);
-	if ( fd == 0 ) return EBADF;      // if the fd is null return fd is not valid
-	if ( buflen <= 0 ) return -1;     // if buflen is not >0 return -1
-	if ( buf == NULL ) return -1;     //if buf is pointing to null return invalid address space
+	if ( fd == 0 ) return EBADF;      		// if the fd is null return fd is not valid
+	if ( buflen <= 0 ) return -1;     		// if buflen is not >0 return -1
+	if ( buf == NULL ) return -1;     		//if buf is pointing to null return invalid address space
 
 	struct  iovec iov;
-	struct uio u;      		/* what should we initilize it to?*/
-	off_t pos = 0;     	        /* This will come from the lseek*/
-	enum uio_rw rw;    		/* this will the UIO_VALUE*/
+	struct uio u;      				/* what should we initilize it to?*/
+	off_t pos = 0;     	        		/* This will come from the lseek*/
+	enum uio_rw rw;    				/* this will the UIO_VALUE*/
 	rw = UIO_WRITE;
 	struct addrspace *as;
 	as = proc_getas();
 
 	uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
-	struct vnode *v = curproc->f_table[fd]->vn;//the vn is not NULL we are running into error in copyin.. something else is null TODO : Meeting Will tomorrow after appointments. 
-	if (v == NULL) return EBADF;               //should return EBADF since fd isn't valid because it hasn't been opened yet in sys_open
-	lock_acquire(curproc->f_table[fd]->lk);
+	struct vnode *v = curproc->f_table[fd]->vn;	//the vn is not NULL we are running into error in copyin.. something else is null TODO : Meeting Will tomorrow after appointments. 
 
- 	if (sizeof(buf) < buflen){                 //the error is that i am not setting the vnode before accessing the vnode
-                VOP_WRITE(v , &u);                 //niether v or u is null in this expression.
-				lock_release(curproc->f_table[fd]->lk);
-                return (size_t)sizeof(buf);        //on debuging we do reach this line.
+	if (v == NULL) return EBADF;               	//should return EBADF since fd isn't valid because it hasn't been opened yet in sys_open
+	//lock_acquire(curproc->f_table[fd]->lk);  	//AR : TODO : init the lock before acquire.
+
+ 	if (sizeof(buf) < buflen){                 	//the error is that i am not setting the vnode before accessing the vnode
+                VOP_WRITE(v , &u);                 	//niether v or u is null in this expression.
+        //lock_release(curproc->f_table[fd]->lk);
+                return (size_t)sizeof(buf);        	//on debuging we do reach this line.
  	}
-	return 0; // return 0 means nothing could be written
+	return 0; 					// return 0 means nothing could be written
 }
 
 /*------------------------------------------------------*/
@@ -244,23 +240,22 @@ ssize_t sys_write(int fd, const void *buf, size_t buflen) {
 int sys_open(const char *filename, int flags){
 	KASSERT(filename != NULL);
 	KASSERT(flags >= 0);
-	//KASSERT(flags == O_RDONLY || flags == O_WRONLY);
 	struct vnode *v;
-	int result; // this is the file handle
+	int result; 					// this is the file handle
 
-	char *as = kmalloc(128 * sizeof(char)); // TA said this should be char * and this is correctly allocating enough memory
+	char *as = kmalloc(128 * sizeof(char)); 	// TA said this should be char * and this is correctly allocating enough memory
 
 
 	size_t actual;
 	copyinstr((const_userptr_t) filename, as, (size_t )MAX_PATH, &actual);  // puts filename into as
 
-	result =vfs_open(as, flags, 0, &v);  // should open with as not filename
+	result =vfs_open(as, flags, 0, &v);  		// should open with as not filename
 	set_file_vnode(result, v);
 	set_file_name (result , filename);
 	if (result) return result;
 
 
-	return -1; // returns -1 on an error
+	return -1; 					// returns -1 on an error
 }
 
 /*------------------------------------------------------*/
@@ -270,14 +265,14 @@ int sys_open(const char *filename, int flags){
 ssize_t sys_read(int fd, void *buf, size_t buflen) {
         KASSERT(fd != 0);
         KASSERT(buf != NULL);
-        if ( fd == 0 ) return EBADF;      // if the fd is null return fd is not valid
-        if ( buflen == 0 ) return -1;     // if buflen is not >0 return -1
-        if ( buf == NULL ) return -1;     //if buf is pointing to null return invalid address space
+        if ( fd == 0 ) return EBADF;      		// if the fd is null return fd is not valid
+        if ( buflen == 0 ) return -1;     		// if buflen is not >0 return -1
+        if ( buf == NULL ) return -1;     		//if buf is pointing to null return invalid address space
 
         struct  iovec iov;
-        struct uio u;                   /* what should we initilize it to?*/
-        off_t pos = 0;          /* This will come from the lseek*/
-        enum uio_rw rw;                 /* this will the UIO_VALUE*/
+        struct uio u;                   		/* what should we initilize it to?*/
+        off_t pos = 0;          			/* This will come from the lseek*/
+        enum uio_rw rw;                 		/* this will the UIO_VALUE*/
         rw = UIO_READ;
         struct addrspace *as;
         as = proc_getas();
@@ -291,7 +286,7 @@ ssize_t sys_read(int fd, void *buf, size_t buflen) {
                 VOP_READ(v , &u);
                 return (size_t)sizeof(buf);
         }
-        return 0; // return 0 means nothing could be written
+        return 0; 					// return 0 means nothing could be written
 }
 
 
@@ -300,11 +295,11 @@ ssize_t sys_read(int fd, void *buf, size_t buflen) {
 /*------------------------------------------------------*/
 
 int sys_close(int fd) {
-KASSERT(fd > 2 && fd < 64);  // a user should not be able to close a console file.
+KASSERT(fd > 2 && fd < 64);  				// a user should not be able to close a console file.
 	if (fd < 0 || fd > 63)
-		return EBADF;	//TODO handle a bad _ close with kasserts and if's.
+		return EBADF;				//TODO handle a bad _ close with kasserts and if's.
 	vfs_close(curproc->f_table[fd]->vn);
-   return 0;       		// return 0 on success
+   return 0;       					// return 0 on success
 }
 
 /*------------------------------------------------------*/
@@ -322,7 +317,7 @@ off_t sys_lseek(int fd, off_t pos, int whence) {
 
 	else return -1;
 
-  return get_seek(fd);	// returns new position on success
+  return get_seek(fd);					// returns new position on success
 }
 
 
@@ -331,32 +326,27 @@ off_t sys_lseek(int fd, off_t pos, int whence) {
 /*------------------------------------------------------*/
 
 int sys_dup2(int oldfd, int newfd) {
-
 	KASSERT(oldfd > 0);
 	KASSERT(newfd > 0);
-
 	if (oldfd < 0 || newfd < 0 || oldfd > 63 || newfd > 63)
 		return EBADF;
-
-//if ((the process's file table was full or a process specific limit on open files was reached) or (the system's file table was full, if such a thing is possible, or a global limit on open files was reached))
-//return EMFILE;
-
-	struct vnode *vn = get_file_vnode(oldfd);    /* getting the values from the old fd position*/
+	struct vnode *vn = get_file_vnode(oldfd);    	/* getting the values from the old fd position*/
 	off_t seek = get_seek(oldfd);
 	const char *filename = get_file_name(oldfd);
-                                                     /* refering the same values to new fd making two fds points to the same file*/
+                                                     	/* refering the same values to new fd making two fds points to the same file*/
 	set_file_vnode(newfd, vn);
 	set_seek(newfd, seek);
 	set_file_name(newfd, filename);
-
 	return newfd;
 }
 
-
+/*------------------------------------------------------*/
+/*-------------------SYS CALL getcwd--------------------*/
+/*------------------------------------------------------*/
 int sys__getcwd(char *buf, size_t buflen){
 	KASSERT(buflen > 0);
 	KASSERT(buf != NULL);
-	struct vnode *v = curproc->p_cwd;	//check tag to make sure it is coming from write
+	struct vnode *v = curproc->p_cwd;		//check tag to make sure it is coming from write
 	int fd = get_fd(v);
 	off_t pos = get_seek(fd);
 	off_t end = sizeof(v->vn_data);
@@ -364,139 +354,11 @@ int sys__getcwd(char *buf, size_t buflen){
 	return (int)(end - pos);
 }
 
-
-
-
-
-
-
 /*------------------------------------------------------*/
-/*-------------------PROCESS SYS CALL FORK--------------*/
+/*-------------------SYS CALL chdir---------------------*/
 /*------------------------------------------------------*/
-
-/*
-pid_t sys_fork(void) {
-
-if (the current user already has too many processes or there are already too many processes on the system)
-return EMPROC;
-
-if (sufficient virtual memory for the new process was not available)
-return ENOMEM;
-
-
-should create a new process copying the following from the current process:
--parents trapframe
--parents address space
--parents filetable
-
-create new PID, assign PPID to current process's PID
-call thread_fork to do the rest of the work
-
-in the child process, 0 is returned
-in the parent process, pid of child is returned
-
-return 0;
-}
-*/
-
-/*------------------------------------------------------*/
-/*-------------------PROCESS SYS CALL EXECV-------------*/
-/*------------------------------------------------------*/
-/*
-int sys_execv(const char *program, char **args) {
-if (the device prefix of program did not exist)
-return ENODEV;
-
-if (the non-final component of program was not a valid directory)
-return ENOTDIR;
-
-if (program did not exist)
-return ENOENT;
-
-if (program is a directory)
-return EISDIR;
-
-if (program is not in a recognizable executable file format, was for the wrong platform, or contained invalid fields)
-return ENOEXEC;
-
-if (insufficient virtual memory is avaliable)
-return ENOMEM;
-
-if (the total size of the argument strings exceeds ARG_MAX)
-return E2BIG;
-
-if (a hardware I/O error occurred)
-return EIO;
-
-if (one of the arguments is an invalid pointer)
-return EFAULT;
-
-return 0;
-}
-*/
-
-/*------------------------------------------------------*/
-/*-------------------PROCESS SYS CALL WAITPID-----------*/
-/*------------------------------------------------------*/
-
-/*
-pid_t sys_waitpid(pid_t pid, int *status, int options) {
-
-if (the options argument requested invalid or unsupported options)
-return EINVAL;
-
-if (the pid argument named a process that was not a valid child of the current process)
-return ECHILD;
-
-if (the pid arguent named a nonexistent process)
-return ESRCH;
-
-if (the status argument was an invalid pointer)
-return EFAULT;
-
-used by parent process to wait for child process to exit
-
-need to:
--check if the PID passed is valid and belongs to a child process of the current process
--check if the status pointer is valid
--check if the options passed are valid
--return an exit status in the status pointer
-
-should use a synchronization primitive to wait for child process to exit
-
-return 0;
-}
-*/
-
-/*------------------------------------------------------*/
-/*-------------------PROCESS SYS CALL EXIT--------------*/
-/*------------------------------------------------------*/
-/*
-void sys_exit(int exitcode) {
-causes current process to exit
-
-need to:
--store the exit code in the current process structure
-	-should use _MKWAIT_EXIT macro with user supplied exit code value to prepare the exit status --> check kern/include/kern/wait.h
--indicate that the process exited in current process structure
--call thread_exit
-}
-*/
-
-
-// "easy" system calls
-
 int sys_chdir(const char *pathname) {
         KASSERT (pathname != NULL);
 	vfs_chdir((char *)pathname);
 	return 0;
 }
-
-/*
-pid_t sys_getpid(void) {
-
-KASSERT(curproc->pid != null);
-
-return curproc->pid;
-}
-*/

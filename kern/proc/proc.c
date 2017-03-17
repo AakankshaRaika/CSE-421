@@ -64,6 +64,7 @@ struct proc *
 proc_create(const char *name)
 {
 	struct proc *proc;
+	struct _file *f_t;
 	proc = kmalloc(sizeof(*proc));
 	if (proc == NULL) {
 		return NULL;
@@ -73,11 +74,11 @@ proc_create(const char *name)
 		kfree(proc);
 		return NULL;
 	}
-	*proc->f_table = kmalloc( 64 * sizeof (struct _file));		//allocating mem to the entire table
+
 	for (int i = 0 ; i < 64 ; i++){
-		proc->f_table[i] = kmalloc (sizeof(struct _file)); 	//alocating memory to every file indiviually
+	        proc->f_table[i] = kmalloc (sizeof(*f_t)); 		//alocating memory to every file indiviually
 		proc->f_table[i]->vn = NULL;
-		proc->f_table[i]->file_name = NULL; 				//assigning the fd's to NULL after creater the memory
+		proc->f_table[i]->file_name = NULL;
 	}
 
 	proc->p_numthreads = 0;
@@ -237,7 +238,7 @@ struct proc *
 proc_create_runprogram(const char *name)
 {
 	struct proc *newproc;
-//	struct vnode *vn1;
+	struct vnode *vn1;
 	struct vnode *vn2;
 	struct vnode *vn3;
 	newproc = proc_create(name);
@@ -266,34 +267,42 @@ proc_create_runprogram(const char *name)
 	}
         spinlock_release(&curproc->p_lock);
 
-        /*Will said this is the correct what of passing the name of a file vs "con:" */
+        /*========= Pre opening of the console files. ===========*/
+
+        /*Will said kstrdup is the correct way of passing the name of a file vs "con:" */
+	/*Carl said we will be using 1 for write and 0 for readable files and not  0664*/
+
+	/*==== Standard out file ====*/
         char *console_name = NULL;
         console_name = kstrdup("con:");
-        //ASK : why cant I open all three files at once? 
-	int stdout = vfs_open(console_name,STDOUT_FILENO,0664,&vn2);  //TA said should be this value
+	int stdout = vfs_open(console_name,STDOUT_FILENO,1,&vn2);
 	if(stdout == 0){
 		newproc->f_table[1]->vn = vn2;
 		newproc->f_table[1]->file_name = console_name;
 		newproc->f_table[1]->seek = 0;
 	}
-        //kfree(console_name);
-	
-	int stdin  = vfs_open(console_name,STDIN_FILENO,0664,&vn1);  //TA said should be this value
+
+        /*==== Standard in file ====*/
+        char *console_name2 = NULL;
+        console_name2 = kstrdup("con:");
+	int stdin  = vfs_open(console_name2,STDIN_FILENO,0,&vn1);
 	if(stdin == 0){
 		newproc->f_table[0]->vn = vn1;
-		newproc->f_table[0]->file_name = console_name;
+		newproc->f_table[0]->file_name = console_name2;
 	 	newproc->f_table[0]->seek = 0;
 	}
-        //kfree(console_name);
-	
-	int stderr = vfs_open(console_name,STDERR_FILENO,0664,&vn3);  //TA said should be this value
+
+        /*==== Standard error file ====*/
+        char *console_name3 = NULL;
+	console_name3 = kstrdup("con:");
+	int stderr = vfs_open(console_name3,STDERR_FILENO,1,&vn3);
 	if(stderr == 0){
 		newproc->f_table[2]->vn = vn3;
-		newproc->f_table[2]->file_name = console_name;
+		newproc->f_table[2]->file_name = console_name3;
 		newproc->f_table[2]->seek = 0;
 	}
-	return newproc;
 
+	return newproc;
 }
 
 /*
