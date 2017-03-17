@@ -48,6 +48,7 @@ struct _file{
    struct spinlock spin;
    //We will have one spin lock and one lock TODO : HINT
    const char *file_name;
+   struct lock *lk;	// need to have a lock
 };
 
 /*

@@ -228,8 +228,11 @@ ssize_t sys_write(int fd, const void *buf, size_t buflen) {
 	uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
 	struct vnode *v = curproc->f_table[fd]->vn;//the vn is not NULL we are running into error in copyin.. something else is null TODO : Meeting Will tomorrow after appointments. 
 	if (v == NULL) return EBADF;               //should return EBADF since fd isn't valid because it hasn't been opened yet in sys_open
+	lock_acquire(curproc->f_table[fd]->lk);
+
  	if (sizeof(buf) < buflen){                 //the error is that i am not setting the vnode before accessing the vnode
                 VOP_WRITE(v , &u);                 //niether v or u is null in this expression.
+				lock_release(curproc->f_table[fd]->lk);
                 return (size_t)sizeof(buf);        //on debuging we do reach this line.
  	}
 	return 0; // return 0 means nothing could be written
