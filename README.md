@@ -20,5 +20,7 @@ Asst2.2 : /130
 -               Process system calls -> Process Table Design , getpid , fork, waitpid , _exit ,execv
 
 Asst3.1 : /60
+
 Asst3.2 : /120
+
 Asst3.3 : /120
