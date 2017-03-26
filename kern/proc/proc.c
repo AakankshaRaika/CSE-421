@@ -50,6 +50,10 @@
 #include <vnode.h>
 #include <kern/unistd.h>
 #include <vfs.h>
+#include <synch.h>
+#define MAX_PATH 512
+#include <copyinout.h>
+#include <kern/fcntl.h>
 
 /*
  * The process for the kernel; this holds all the kernel-only threads.
@@ -75,6 +79,7 @@ proc_create(const char *name)
 		return NULL;
 	}
 
+        /* memory allocation for the file table of size 64 */
 	for (int i = 0 ; i < 64 ; i++){
 	        proc->f_table[i] = kmalloc (sizeof(*f_t)); 		//alocating memory to every file indiviually
 		proc->f_table[i]->vn = NULL;
@@ -83,7 +88,6 @@ proc_create(const char *name)
 
 	proc->p_numthreads = 0;
 	spinlock_init(&proc->p_lock);
-
 	/* VM fields */
 	proc->p_addrspace = NULL;
 
@@ -155,7 +159,17 @@ proc_destroy(struct proc *proc)
 	 * incorrect to destroy it.)
 	 */
 
+        /*freeing f_table's memory*/
+        if(proc->f_table){
+          for (int i = 0 ; i < 64 ; i++){
+                VOP_DECREF(proc->f_table[i]->vn);     // deference
+                lock_destroy(proc->f_table[i]->lk);   // destroy the lock
+                kfree(proc->f_table[i]);
+              }
+        }
+
 	/* VFS fields */
+
 	if (proc->p_cwd) {
 		VOP_DECREF(proc->p_cwd);
 		proc->p_cwd = NULL;
@@ -241,16 +255,15 @@ proc_create_runprogram(const char *name)
 	struct vnode *vn1;
 	struct vnode *vn2;
 	struct vnode *vn3;
+
 	newproc = proc_create(name);
 	if (newproc == NULL) {
 		return NULL;
 	}
-
 	/* VM fields */
-
 	newproc->p_addrspace = NULL;
-
 	/* VFS fields */
+
 
 
 	/*
@@ -258,8 +271,6 @@ proc_create_runprogram(const char *name)
 	 * (We don't need to lock the new process, though, as we have
 	 * the only reference to it.)
 	 */
-
-
 	spinlock_acquire(&curproc->p_lock);
 	if (curproc->p_cwd != NULL) {
 		VOP_INCREF(curproc->p_cwd);
@@ -267,39 +278,54 @@ proc_create_runprogram(const char *name)
 	}
         spinlock_release(&curproc->p_lock);
 
-        /*========= Pre opening of the console files. ===========*/
 
-        /*Will said kstrdup is the correct way of passing the name of a file vs "con:" */
-	/*Carl said we will be using 1 for write and 0 for readable files and not  0664*/
 
+        /*========= Pre opening of the console files. (console init) ===========*/
 	/*==== Standard out file ====*/
         char *console_name = NULL;
         console_name = kstrdup("con:");
-	int stdout = vfs_open(console_name,STDOUT_FILENO,1,&vn2);
+
+        char *as = kmalloc(MAX_PATH * sizeof(console_name)); 					// TA said this should be char * and this is correctly allocating enough memory
+	size_t actual;
+	copyinstr((const_userptr_t)console_name,as,(size_t )MAX_PATH,&actual);  	// puts filename into as
+
+	int stdout = vfs_open(console_name,O_WRONLY,1,&vn2);               		//vfs open gives the file handle
 	if(stdout == 0){
 		newproc->f_table[1]->vn = vn2;
 		newproc->f_table[1]->file_name = console_name;
-		newproc->f_table[1]->seek = 0;
+		newproc->f_table[1]->seek = 0;                                  	//when file initially opened the offset should be zero
+                newproc->f_table[1]->lk = lock_create(console_name);            	//creates a lock for the file
 	}
 
         /*==== Standard in file ====*/
         char *console_name2 = NULL;
         console_name2 = kstrdup("con:");
-	int stdin  = vfs_open(console_name2,STDIN_FILENO,0,&vn1);
+
+        char *as2 = kmalloc(MAX_PATH * sizeof(char));         				// TA said this should be char * and this is correctly allocating enough memory
+        size_t actual2;
+        copyinstr((const_userptr_t)console_name2,as2,(size_t )MAX_PATH,&actual2);  	// puts filename into as
+	int stdin  = vfs_open(console_name2,O_RDONLY,0,&vn1);
 	if(stdin == 0){
 		newproc->f_table[0]->vn = vn1;
 		newproc->f_table[0]->file_name = console_name2;
 	 	newproc->f_table[0]->seek = 0;
+                newproc->f_table[0]->lk = lock_create(console_name2);
 	}
 
         /*==== Standard error file ====*/
         char *console_name3 = NULL;
 	console_name3 = kstrdup("con:");
-	int stderr = vfs_open(console_name3,STDERR_FILENO,1,&vn3);
+
+        char *as3 = kmalloc(MAX_PATH * sizeof(char));         				// TA said this should be char * and this is correctly allocating enough memory
+        size_t actual3;
+
+        copyinstr((const_userptr_t)console_name3,as3,(size_t )MAX_PATH,&actual3);  	// puts filename into as
+	int stderr = vfs_open(console_name3,O_WRONLY,1,&vn3);
 	if(stderr == 0){
 		newproc->f_table[2]->vn = vn3;
 		newproc->f_table[2]->file_name = console_name3;
 		newproc->f_table[2]->seek = 0;
+		newproc->f_table[2]->lk = lock_create(console_name3);
 	}
 
 	return newproc;

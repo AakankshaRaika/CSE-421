@@ -45,7 +45,7 @@ struct _file{
    struct vnode *vn;  /*this is the vnode pointing to that perticular file*/
    int fd;            /*this is the index of that vnode within the file table*/
    off_t seek;          /*this is keeping track of the "last modified" point in the file*/
-   struct spinlock spin;
+   struct spinlock *spin;
    //We will have one spin lock and one lock TODO : HINT
    const char *file_name;
    struct lock *lk;	// need to have a lock
