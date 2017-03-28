@@ -62,7 +62,7 @@ int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 // file system calls
 
 ssize_t sys_write(int fd, const void *buf, size_t buflen, int *retval);
-ssize_t sys_read(int fd, void *buf, size_t buflen);
+ssize_t sys_read(int fd, void *buf, size_t buflen, int *retval);
 int sys_open(const char *filename, int flags);
 int sys_close(int fd);
 off_t sys_lseek(int fd, off_t pos, int whence);

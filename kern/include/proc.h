@@ -41,14 +41,16 @@
 struct addrspace;
 struct thread;
 struct vnode;
+
+/*----------------------MY STRUCT--------------------*/
 struct _file{
-   struct vnode *vn;  /*this is the vnode pointing to that perticular file*/
-   int fd;            /*this is the index of that vnode within the file table*/
-   off_t seek;          /*this is keeping track of the "last modified" point in the file*/
-   struct spinlock *spin;
-   //We will have one spin lock and one lock TODO : HINT
-   const char *file_name;
-   struct lock *lk;	// need to have a lock
+   struct vnode *vn;	  	/*this is the vnode pointing to that perticular file*/
+   int fd;            		/*this is the index of that vnode within the file table*/
+   off_t seek;          	/*this is keeping track of the "last modified" point in the file*/
+   struct spinlock *spin;	/*need a spin lock to make things atomic*/
+   int flag;			/*flag for the file imp, comes from the open.*/
+   const char *file_name;	/*file name associated with each fd , locks and vn*/
+   struct lock *lk;		/* need to have a lock*/
 };
 
 /*
@@ -74,7 +76,7 @@ struct proc {
 	struct spinlock p_lock;		/* Lock for this structure */
 	unsigned p_numthreads;		/* Number of threads in this process */
 
-        struct _file *f_table[64];          /* file table */
+        struct _file *f_table[64];      /* file table */
 
 	/* VM */
 	struct addrspace *p_addrspace;	/* virtual address space */
@@ -83,8 +85,8 @@ struct proc {
 	struct vnode *p_cwd;		/* current working directory */
 
 	/* add more material here as needed */
-	pid_t pid;	// process id
-	pid_t ppid; // parent pid
+	pid_t pid;			// process id
+	pid_t ppid; 			// parent pid
 
 	int exit_code;
 };
@@ -92,22 +94,14 @@ struct proc {
 /* This is the process structure for the kernel and for kernel-only threads. */
 extern struct proc *kproc;
 
-struct vnode *get_file_vnode ( int fd ); //this will return the vnode to the file at the fd
-
-/**/
-void set_file_vnode(int fd , struct vnode *vn);
-
-/**/
-void set_seek (int fd , int seek);
-
-/**/
-off_t get_seek (int fd);
-
+/*----------------------MY FUNCTION------------------*/
+/*get the fd in the file table using the vn of a file*/
 int get_fd(struct vnode *vn);
 
-void set_file_name(int file_descriptor, const char *file_name);
 
-const char * get_file_name(int fd);
+/*----------------------MY FUNTION-------------------*/
+/* get the next available file in the file table     */
+int next_fd ();
 
 /* Call once during system startup to allocate data structures. */
 void proc_bootstrap(void);

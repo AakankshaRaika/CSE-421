@@ -97,7 +97,33 @@ proc_create(const char *name)
 	return proc;
 }
 
-/*------------------my function----------------------------*/
+
+/*this is returning the vnode to the file at the fd given, vnode is just pointing to that file*/
+struct vnode *get_file_vnode (int file_discriptor){
+   return  curproc->f_table[file_discriptor]->vn;
+}
+
+void set_file_vnode (int file_discriptor, struct vnode *vn){
+  curproc->f_table[file_discriptor]->vn = vn;
+}
+
+off_t get_seek (int file_discriptor){
+  return curproc->f_table[file_discriptor]->seek;
+}
+
+void set_seek (int file_discriptor , int seek){
+   curproc->f_table[file_discriptor]->seek = seek;
+}
+
+
+const char * get_file_name (int file_discriptor){
+  return curproc->f_table[file_discriptor]->file_name;
+}
+
+void set_file_name (int file_discriptor, const char * file_name){
+   curproc->f_table[file_discriptor]->file_name = file_name;
+}
+
 int get_fd(struct vnode *vn) {
 	int fd = 0;
 	while (fd < 64) {
@@ -133,7 +159,6 @@ proc_destroy(struct proc *proc)
 	 * incorrect to destroy it.)
 	 */
 
-        /*freeing f_table's memory*/
         if(proc->f_table){
           for (int i = 0 ; i < 64 ; i++){
                 VOP_DECREF(proc->f_table[i]->vn);     // deference
@@ -238,8 +263,6 @@ proc_create_runprogram(const char *name)
 	newproc->p_addrspace = NULL;
 	/* VFS fields */
 
-
-
 	/*
 	 * Lock the current process to copy its current directory.
 	 * (We don't need to lock the new process, though, as we have
@@ -251,8 +274,6 @@ proc_create_runprogram(const char *name)
 		newproc->p_cwd = curproc->p_cwd;
 	}
         spinlock_release(&curproc->p_lock);
-
-
 
         /*========= Pre opening of the console files. (console init) ===========*/
 	/*==== Standard out file ====*/
@@ -277,6 +298,7 @@ proc_create_runprogram(const char *name)
 
         char *as2 = kmalloc(MAX_PATH * sizeof(char));         				// TA said this should be char * and this is correctly allocating enough memory
         size_t actual2;
+
         copyinstr((const_userptr_t)console_name2,as2,(size_t )MAX_PATH,&actual2);  	// puts filename into as
 	int stdin  = vfs_open(console_name2,O_RDONLY,0,&vn1);
 	if(stdin == 0){
