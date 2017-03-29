@@ -143,11 +143,13 @@ syscall(struct trapframe *tf)
 				       (off_t)tf->tf_a1,
 				       tf->tf_a2);
 			break;
+*/
 
             case SYS_close:
 			err = sys_close(tf->tf_a0);
 			break;
 
+/*
 	    case SYS_dup2:
 			err = sys_dup2(tf->tf_a0,
 				       tf->tf_a1);
@@ -334,4 +336,18 @@ int sys_open(const char *filename, int flags , int *retval){
         }
 
 	return -1; 					// returns -1 on an error
+}
+
+/*------------------------------------------------------*/
+/*-------------------SYS CALL CLOSE---------------------*/
+/*------------------------------------------------------*/
+
+int sys_close(int fd) {
+   KASSERT(fd >= 0);
+   KASSERT(fd < 64);  				// a user should not be able to close a console file.
+	if (fd < 0 || fd >= 64)
+		return EBADF;					//TODO handle a bad _ close with kasserts and if's.
+	vfs_close(curproc->f_table[fd]->vn);
+
+   return 0;       						// return 0 on success
 }
