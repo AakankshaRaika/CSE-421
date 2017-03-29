@@ -107,6 +107,18 @@ int get_fd(struct vnode *vn) {
 	return 0;
 }
 
+
+/*------------------my function----------------------------*/
+int next_fd(struct proc *proc){
+    for (int i = 0 ; i < 64 ; i++){
+           if(proc->f_table[i]->file_name == NULL && proc->f_table[i]->vn == NULL){
+              return i;           /*a +ve fd is return on success*/
+             }
+        }
+    return -1;                    /*a -ve fd is return on failiur*/
+}
+
+
 /*
  * Destroy a proc structure.
  *
@@ -269,6 +281,7 @@ proc_create_runprogram(const char *name)
 		newproc->f_table[1]->file_name = console_name;
 		newproc->f_table[1]->seek = 0;                                  	//when file initially opened the offset should be zero
                 newproc->f_table[1]->lk = lock_create(console_name);            	//creates a lock for the file
+                newproc->f_table[1]->flag = O_WRONLY;
 	}
 
         /*==== Standard in file ====*/
@@ -284,6 +297,7 @@ proc_create_runprogram(const char *name)
 		newproc->f_table[0]->file_name = console_name2;
 	 	newproc->f_table[0]->seek = 0;
                 newproc->f_table[0]->lk = lock_create(console_name2);
+		newproc->f_table[0]->flag = O_RDONLY;
 	}
 
         /*==== Standard error file ====*/
@@ -300,6 +314,7 @@ proc_create_runprogram(const char *name)
 		newproc->f_table[2]->file_name = console_name3;
 		newproc->f_table[2]->seek = 0;
 		newproc->f_table[2]->lk = lock_create(console_name3);
+		newproc->f_table[2]->flag = O_WRONLY;
 	}
 
 	return newproc;

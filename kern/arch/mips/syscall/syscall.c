@@ -132,11 +132,12 @@ syscall(struct trapframe *tf)
                                        (int * )(& retval));
 			break;
 
-/*	    case SYS_open:
+	    case SYS_open:
 			err = sys_open((const char *)tf->tf_a0,
-				       tf->tf_a1);
+				       tf->tf_a1,
+                                       (int * )(& retval) );
 			break;
-
+/*
 	    case SYS_lseek:
 			err = sys_lseek(tf->tf_a0,
 				       (off_t)tf->tf_a1,
@@ -298,4 +299,39 @@ ssize_t sys_read(int fd, void *buf, size_t buflen , int *retval) {
         lock_release(curproc->f_table[fd]->lk);
         *retval = buflen - u.uio_resid;
         return 0;
+}
+
+/*------------------------------------------------------*/
+/*-------------------SYS CALL OPEN----------------------*/
+/*------------------------------------------------------*/
+int sys_open(const char *filename, int flags , int *retval){
+	KASSERT(filename != NULL);
+	KASSERT(flags >= 0);
+        if (filename == NULL) return EFAULT;
+
+	struct vnode *v;
+	int result; 					// this is the file handle
+	char *as = kmalloc( MAX_PATH * sizeof(char)); 	// TA said this should be char * and this is correctly allocating enough memory
+
+	size_t actual;
+	copyinstr((const_userptr_t) filename, as, (size_t )MAX_PATH, &actual);  // puts filename into as
+
+        int fd = next_fd(curproc);
+
+        KASSERT (fd >0);
+        KASSERT (fd <64);
+
+ 	result = vfs_open(as, flags, 0, &v);  		// should open with as not filename
+
+        if(result == 0 ){
+                curproc->f_table[fd]->vn = v;
+		curproc->f_table[fd]->file_name = filename;
+		curproc->f_table[fd]->seek = 0;                                  	//when file initially opened the offset should be zero
+                curproc->f_table[fd]->lk = lock_create(filename);
+		curproc->f_table[fd]->flag = flags;
+                *retval = fd;
+                return 0;
+        }
+
+	return -1; 					// returns -1 on an error
 }

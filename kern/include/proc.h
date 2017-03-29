@@ -98,10 +98,9 @@ extern struct proc *kproc;
 /*get the fd in the file table using the vn of a file*/
 int get_fd(struct vnode *vn);
 
-
 /*----------------------MY FUNTION-------------------*/
 /* get the next available file in the file table     */
-int next_fd ();
+int next_fd(struct proc *proc);
 
 /* Call once during system startup to allocate data structures. */
 void proc_bootstrap(void);
