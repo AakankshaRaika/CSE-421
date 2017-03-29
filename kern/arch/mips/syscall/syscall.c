@@ -281,7 +281,7 @@ ssize_t sys_read(int fd, void *buf, size_t buflen , int *retval) {
 	struct uio u;      				/* what should we initilize it to?*/
 	off_t pos = curproc->f_table[fd]->seek;         /*getting the offset of the file*/ /* This will come from the lseek*/
 	enum uio_rw rw;    				/* this will the UIO_VALUE*/
-	rw = UIO_WRITE;
+	rw = UIO_READ;
 	struct addrspace *as;
 	as = proc_getas();				/*this will get the address space of the current process*/
 
