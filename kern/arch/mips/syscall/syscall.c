@@ -378,6 +378,7 @@ int sys_close(int fd ) {
         else{
         /*help from office hours : this is imp for dup2*/
            curproc->f_table[fd]->ref -= 1;
+           lock_release(curproc->f_table[fd]->lk);
         }
    return 0;       						// return 0 on success
 }
