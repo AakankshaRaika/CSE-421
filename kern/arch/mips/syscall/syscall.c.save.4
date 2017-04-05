@@ -30,7 +30,6 @@
 #include <types.h>
 #include <kern/errno.h>
 #include <kern/syscall.h>
-#include <kern/stat.h>
 #include <lib.h>
 #include <mips/trapframe.h>
 #include <thread.h>
@@ -92,9 +91,7 @@ syscall(struct trapframe *tf)
 	int callno;
 	int32_t retval;
 	int err;
-        off_t np;
-        off_t os;
-        int whence;
+
 	KASSERT(curthread != NULL);
 	KASSERT(curthread->t_curspl == 0);
 	KASSERT(curthread->t_iplhigh_count == 0);
@@ -142,29 +139,31 @@ syscall(struct trapframe *tf)
 			break;
 
 	    case SYS_lseek:
-                        /*help from Office hours : need to make proper conversions of the writebuf size for the fileonlytest (pos in general) handle 64 bits here too*/
-                        os = (((off_t)tf->tf_a2 << 32) | tf->tf_a3);
-
-                        /*help from office hours : need to copy in the whence and assign mem or else lseek is not reading it, also was return 512 != 1024 the error was being caused from this line */
-			copyin((const userptr_t)(tf->tf_sp+16), &whence, sizeof(whence));
 			err = sys_lseek(tf->tf_a0,
-					os,
-				      	whence,
-				      	&np);
-
-                        // err = sys_lseek (tf->tf_a1 , (off_t) tf->tf_a1 , tf->tf_a2 , (off_t *)(& retval)) ; /*Help from office hours : this is wrong not handling 64 bits anywhere*/
-
-                        /*help from office hours : need to return 2 registers handling 64 bits */
-                        if(err == 0){
-                        	retval = (int32_t)((np & 0xFFFFFFFF00000000) >> 32);
-				tf->tf_v1 = (int32_t)(np & 0xFFFFFFFF);
-			}
+				       (off_t)tf->tf_a1,
+				       tf->tf_a2,
+				       (off_t *) (& retval));
 			break;
 
             case SYS_close:
 			err = sys_close(tf->tf_a0);
 			break;
 
+/*
+	    case SYS_dup2:
+			err = sys_dup2(tf->tf_a0,
+				       tf->tf_a1);
+			break;
+
+	    case SYS_chdir:
+			err = sys_chdir((const char *)tf->tf_a0);
+			break;
+
+            case SYS___getcwd:
+			err = sys__getcwd((char *)tf->tf_a0,
+				          (size_t)tf->tf_a1);
+			break;
+*/
             case SYS__exit:
                         err = 0;
                         thread_exit();
@@ -222,24 +221,19 @@ enter_forked_process(struct trapframe *tf)
 /*-------------------SYS CALL WRITE----------------------*/
 /*------------------------------------------------------*/
 ssize_t sys_write(int fd, const void *buf, size_t buflen, int *retval) {
+	KASSERT(fd != 0);
+	KASSERT(buf != NULL);
 	/*make sure the con file is open and does exists*/
         KASSERT (curproc->f_table[1]->vn != NULL);
  	KASSERT (curproc->f_table[2]->vn != NULL);
 
+
+	if ( fd == 0 ) return EBADF;      		// if the fd is null return fd is not valid
+	if ( buflen <= 0 ) return -1;     		// if buflen is not >0 return -1
+	if ( buf == NULL ) return -1;     		// if buf is pointing to null return invalid address space
+
         lock_acquire(curproc->f_table[fd]->lk);
-//        kprintf("write buf size in kernel : %d \n" , (int)buflen);
-        if(curproc->f_table[fd] == NULL){
-                return EBADF;
-        }
-        if ( fd < 0 ){
-		return EBADF;
-	}
-        if ( fd > 63 ){
-		return EBADF;
-	}
-	if(buf == NULL){
-                return EFAULT;
-        }
+
         /*inits for the uio_userinit function*/
 	struct  iovec iov;
 	struct uio u;      				/* what should we initilize it to?*/
@@ -248,10 +242,10 @@ ssize_t sys_write(int fd, const void *buf, size_t buflen, int *retval) {
 	rw = UIO_WRITE;
 	struct addrspace *as;
 	as = proc_getas();				/*this will get the address space of the current process*/
-	uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
 
-        /*getting the current vnode*/
+	uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
 	struct vnode *v = curproc->f_table[fd]->vn;
+
         int result = VOP_WRITE(v,&u);
         if (result){
         /*we will reach here if the VOP was not successfull*/
@@ -262,7 +256,7 @@ ssize_t sys_write(int fd, const void *buf, size_t buflen, int *retval) {
         curproc->f_table[fd]->seek = u.uio_offset;
         lock_release(curproc->f_table[fd]->lk);
         *retval = buflen - u.uio_resid;
-//        kprintf("write buf size in kernel after write was completed is : %d \n" , (int)buflen);
+
 	return 0; 					// return 0 means nothing could be written
 }
 
@@ -271,20 +265,19 @@ ssize_t sys_write(int fd, const void *buf, size_t buflen, int *retval) {
 /*------------------------------------------------------*/
 // rest of file system calls
 ssize_t sys_read(int fd, void *buf, size_t buflen , int *retval) {
+        KASSERT(fd != 0);
+	KASSERT(buf != NULL);
 	/*make sure the con file is open and does exists*/
         KASSERT (curproc->f_table[1]->vn != NULL);
  	KASSERT (curproc->f_table[2]->vn != NULL);
 
+
+	if ( fd == 0 ) return EBADF;      		// if the fd is null return fd is not valid
+	if ( buflen <= 0 ) return -1;     		// if buflen is not >0 return -1
+	if ( buf == NULL ) return -1;     		// if buf is pointing to null return invalid address space
+
         lock_acquire(curproc->f_table[fd]->lk);
-        if( fd < 0 ){
-                return EBADF;
-        }
-        if( fd > 63 ){
-                return EBADF;
-        }
-	if(buf == NULL){
-		return EFAULT;
-	}
+
         /*inits for the uio_userinit function*/
 	struct  iovec iov;
 	struct uio u;      				/* what should we initilize it to?*/
@@ -293,9 +286,10 @@ ssize_t sys_read(int fd, void *buf, size_t buflen , int *retval) {
 	rw = UIO_READ;
 	struct addrspace *as;
 	as = proc_getas();				/*this will get the address space of the current process*/
-	uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
 
+	uio_Userinit(&iov , &u , (void *)buf, buflen, pos, rw, as);
 	struct vnode *v = curproc->f_table[fd]->vn;
+
         int result = VOP_READ(v,&u);
         if (result){
                 /*we will reach here if the VOP was not successfull*/
@@ -313,40 +307,29 @@ ssize_t sys_read(int fd, void *buf, size_t buflen , int *retval) {
 /*-------------------SYS CALL OPEN----------------------*/
 /*------------------------------------------------------*/
 int sys_open(const char *filename, int flags , int *retval){
-        //TODO : HOW DO I MAKE THIS ATOMIC??
+	KASSERT(filename != NULL);
+	KASSERT(flags >= 0);
         if (filename == NULL) return EFAULT;
-        if (flags < 0){
-		return EINVAL;
-        }
-        if (flags == O_EXCL){
-                return EEXIST;
-        }
+
 	struct vnode *v;
 	int result; 					// this is the file handle
 	char *as = kmalloc( MAX_PATH * sizeof(char)); 	// TA said this should be char * and this is correctly allocating enough memory
 
 	size_t actual;
-	int err = copyinstr((const_userptr_t) filename, as, (size_t )MAX_PATH, &actual);  // puts filename into as
-        if (err){
-              return err;                               //the copy failed.
-	}
+	copyinstr((const_userptr_t) filename, as, (size_t )MAX_PATH, &actual);  // puts filename into as
 
-        int fd = next_fd(curproc);                      //next proc fd found is invalid
-        if (fd < 0 || fd >63){
-		return ENOSPC;
-        }
+        int fd = next_fd(curproc);
+
+        KASSERT (fd >0);
+        KASSERT (fd <64);
+
  	result = vfs_open(as, flags, 0, &v);  		// should open with as not filename
 
-        /*initilize all the file components here for the file opened*/
         if(result == 0 ){
-                curproc->f_table[fd]->lk = lock_create(filename);
-                if (curproc->f_table[fd]->lk == NULL){
-			        return ENOMEM;
-		}
                 curproc->f_table[fd]->vn = v;
- 		curproc->f_table[fd]->file_name = filename;
+		curproc->f_table[fd]->file_name = filename;
 		curproc->f_table[fd]->seek = 0;                                  	//when file initially opened the offset should be zero
-                curproc->f_table[fd]->ref = 1;
+                curproc->f_table[fd]->lk = lock_create(filename);
 		curproc->f_table[fd]->flag = flags;
                 *retval = fd;
                 return 0;
@@ -359,26 +342,15 @@ int sys_open(const char *filename, int flags , int *retval){
 /*-------------------SYS CALL CLOSE---------------------*/
 /*------------------------------------------------------*/
 
-int sys_close(int fd ) {
-        /*vfs_close doese all the work for close*/
-	if (fd < 0 || fd >= 64) return EBADF;
-        if(curproc->f_table[fd] == NULL) {
-		return EBADF;
-	}
-
+int sys_close(int fd) {
+   KASSERT(fd >= 0);
+   KASSERT(fd < 64);  				// a user should not be able to close a console file.
+	if (fd < 0 || fd >= 64)
+		return EBADF;					//TODO handle a bad _ close with kasserts and if's.
         lock_acquire(curproc->f_table[fd]->lk);
-        if(curproc->f_table[fd]->ref == 1){                     //Help from Office hours : if and only if there is only one refernce to this file opened then close it other wise -1 the ref from the filetable
-	   vfs_close(curproc->f_table[fd]->vn);
-           lock_release(curproc->f_table[fd]->lk);
-           lock_destroy(curproc->f_table[fd]->lk);
-
-           curproc->f_table[fd] = NULL;                         //Help office hours : need to do the nulling before kfree like in any other processs
-           kfree(curproc->f_table[fd]);
-	}
-        else{
-        /*help from office hours : this is imp for dup2*/
-           curproc->f_table[fd]->ref -= 1;
-        }
+	vfs_close(curproc->f_table[fd]->vn);
+        lock_release(curproc->f_table[fd]->lk);
+        lock_destroy(curproc->f_table[fd]->lk);
    return 0;       						// return 0 on success
 }
 
@@ -388,42 +360,38 @@ int sys_close(int fd ) {
 /*------------------------------------------------------*/
 
 off_t sys_lseek(int fd, off_t pos, int whence , off_t *retval) {
-        /*Office hours : check for validation*/
-        if(curproc->f_table[fd] == NULL) {                      //the file table was destroyed
-                return EBADF;
-        }
+  KASSERT(fd > 0);
+  KASSERT(fd < 64);
+//  if ( !(whence == SEEK_CUR) || !(whence == SEEK_END) || !(whence == SEEK_SET)) return EINVAL;
 
-        if (!((whence == SEEK_CUR) || (whence == SEEK_END) || (whence == SEEK_SET) )) return EBADF; //the whence is not valid
-
-        if (fd < 0 || fd >= 64) return EBADF;                   //the file doesnt exists
-
-        /*if validation was ok start lseek*/
         lock_acquire(curproc->f_table[fd]->lk);
-        struct stat f_stat;                                     //for getting the file size (kern/stat.h)
-        off_t off = curproc->f_table[fd]->seek;
-        off_t err;
+	struct vnode *v = curproc->f_table[fd]->vn;
+        off_t cur = curproc->f_table[fd]->seek;
 
-        /*Feedback Office hours : double check locks they might be a little off*/
-	switch(whence) {
-		case SEEK_SET:
-	           off = pos;
-		   break;
-		case SEEK_CUR:
-	           off = curproc->f_table[fd]->seek +pos;
-	           break;
-		case SEEK_END:
-		   err = (off_t)VOP_STAT(curproc->f_table[fd]->vn, &f_stat); //checks for the file info data
-		   if (err) {
-			lock_release(curproc->f_table[fd]->lk);
-			return err;
-	           }
-	           off = f_stat.st_size + pos; 			//file size + pos
-	           break;
+        int err = VOP_ISSEEKABLE(v);
+
+        if (err){
+           lock_release(curproc->f_table[fd]->lk);
+           return err;
         }
 
-	if ( (whence == SEEK_CUR) || (whence == SEEK_END) || (whence == SEEK_SET) ){
-           curproc->f_table[fd]->seek = off;
-           *retval = off;                                       //Feedback office hours : this is giving be 64 bits
+
+	switch(whence) {
+	case SEEK_SET:
+           curproc->f_table[fd]->seek = pos;
+	   break;
+	case SEEK_CUR:
+           curproc->f_table[fd]->seek = cur+pos;
+           break;
+	case SEEK_END:
+           curproc->f_table[fd]->seek = sizeof(v->vn_data)+pos; //file size + pos
+           break;
+	}
+
+	if ( (whence == SEEK_CUR) | (whence == SEEK_END) | (whence == SEEK_SET) )
+	{
+	   cur = curproc->f_table[fd]->seek;
+           *retval = cur;
            lock_release(curproc->f_table[fd]->lk);
            return 0;
  	}
@@ -433,3 +401,4 @@ off_t sys_lseek(int fd, off_t pos, int whence , off_t *retval) {
 	return -1;
 
 }
+

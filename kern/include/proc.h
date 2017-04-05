@@ -51,6 +51,7 @@ struct _file{
    int flag;			/*flag for the file imp, comes from the open.*/
    const char *file_name;	/*file name associated with each fd , locks and vn*/
    struct lock *lk;		/* need to have a lock*/
+   int ref ;
 };
 
 /*
