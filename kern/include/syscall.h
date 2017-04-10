@@ -66,7 +66,7 @@ ssize_t sys_read(int fd, void *buf, size_t buflen, int *retval);
 int sys_open(const char *filename, int flags, int *retval);
 int sys_close(int fd);
 off_t sys_lseek(int fd, off_t pos, int whence , off_t *terval);
-int sys_dup2(int oldfd, int newfd);
+int sys_dup2(int oldfd, int newfd, int * retval);
 int sys__getcwd(char *buf, size_t buflen);
 
 
